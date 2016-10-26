@@ -1,0 +1,6 @@
+[package]
+name = "avioane"
+version = "0.1.0"
+authors = ["Flavius Aspra <flavius.as@gmail.com>"]
+
+[dependencies]
