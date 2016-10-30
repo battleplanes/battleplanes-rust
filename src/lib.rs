@@ -207,7 +207,7 @@ impl CoordNum {
             (&CoordNum::Four, 3) => Some(CoordNum::Seven),
             (&CoordNum::Five, 3) => Some(CoordNum::Eight),
             (&CoordNum::Six, 3) => Some(CoordNum::Nine),
-            (&CoordNum::Seven, 3) => Some(CoordNum::Nine),
+            (&CoordNum::Seven, 3) => Some(CoordNum::Ten),
             (&CoordNum::Four, -3) => Some(CoordNum::One),
             (&CoordNum::Five, -3) => Some(CoordNum::Two),
             (&CoordNum::Six, -3) => Some(CoordNum::Three),
@@ -417,8 +417,14 @@ impl Plane {
             return true;
         }
         for tile in self.tile_iterator().filter_map(|t| t) {
+            if tile == other.head {
+                return true;
+            }
             for other_tile in other.tile_iterator().filter_map(|t| t) {
                 if tile == other_tile {
+                    return true;
+                }
+                if self.head == other_tile {
                     return true;
                 }
             }
@@ -479,7 +485,7 @@ impl Board {
         !self.hits.is_empty() || !self.misses.is_empty()
     }
     fn is_initialized(&self) -> bool {
-        self.planes.len() == 3
+        self.planes.len() + self.killed_planes.len() == 3
     }
     pub fn hit_at(&mut self, tile: &str) -> bool {
         match Coordinate::new(tile) {
@@ -740,6 +746,16 @@ mod test {
         assert_eq!(None, iter.next());
     }
     #[test]
+    fn bug_tiles_all_visible_h7_n() {
+        let p = Plane::new("H7", "N").unwrap();
+        let mut iter = p.tile_iterator();
+        let expected_coordinates = vec!["F8", "G8", "H8", "I8", "J8", "H9", "G10", "H10", "I10"];
+        for expected in expected_coordinates {
+            assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
+        }
+        assert_eq!(None, iter.next());
+    }
+    #[test]
     fn iterate_tiles_lefthand_invisible_west() {
         let p = Plane::new("A10", "W").unwrap();
         let mut iter = p.tile_iterator();
@@ -797,11 +813,13 @@ mod test {
             (("C1", "N"), ("E1", "N")),
             (("C1", "N"), ("F1", "N")),
             (("C1", "N"), ("G1", "N")),
+            (("E3", "W"), ("C2", "N")),
         ];
         for plane_positions_pair in overlapping_pairs {
             let p1 = Plane::new((plane_positions_pair.0).0, (plane_positions_pair.0).1).unwrap();
             let p2 = Plane::new((plane_positions_pair.1).0, (plane_positions_pair.1).1).unwrap();
             assert_eq!(true, p1.is_overlapping_with(&p2));
+            assert_eq!(true, p2.is_overlapping_with(&p1));
         }
     }
     #[test]
