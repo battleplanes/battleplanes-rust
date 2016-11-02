@@ -22,75 +22,33 @@ pub enum CoordLetter {
 
 impl CoordLetter {
     pub fn new(from: &str) -> Option<CoordLetter> {
+        use CoordLetter::*;
         match from {
-            //TODO: a nicer way
-            "A" => Some(CoordLetter::A),
-            "B" => Some(CoordLetter::B),
-            "C" => Some(CoordLetter::C),
-            "D" => Some(CoordLetter::D),
-            "E" => Some(CoordLetter::E),
-            "F" => Some(CoordLetter::F),
-            "G" => Some(CoordLetter::G),
-            "H" => Some(CoordLetter::H),
-            "I" => Some(CoordLetter::I),
-            "J" => Some(CoordLetter::J),
+            "A" => Some(A),
+            "B" => Some(B),
+            "C" => Some(C),
+            "D" => Some(D),
+            "E" => Some(E),
+            "F" => Some(F),
+            "G" => Some(G),
+            "H" => Some(H),
+            "I" => Some(I),
+            "J" => Some(J),
             _ => None
         }
     }
     pub fn new_moved_by(&self, offset: i32) -> Option<CoordLetter> {
-        match (self, offset) {
-            //TODO: a nicer way
-            (_, 0) => Some(self.clone()),
-            (&CoordLetter::A, 1) => Some(CoordLetter::B),
-            (&CoordLetter::B, 1) => Some(CoordLetter::C),
-            (&CoordLetter::C, 1) => Some(CoordLetter::D),
-            (&CoordLetter::D, 1) => Some(CoordLetter::E),
-            (&CoordLetter::E, 1) => Some(CoordLetter::F),
-            (&CoordLetter::F, 1) => Some(CoordLetter::G),
-            (&CoordLetter::G, 1) => Some(CoordLetter::H),
-            (&CoordLetter::H, 1) => Some(CoordLetter::I),
-            (&CoordLetter::I, 1) => Some(CoordLetter::J),
-            (&CoordLetter::B, -1) => Some(CoordLetter::A),
-            (&CoordLetter::C, -1) => Some(CoordLetter::B),
-            (&CoordLetter::D, -1) => Some(CoordLetter::C),
-            (&CoordLetter::E, -1) => Some(CoordLetter::D),
-            (&CoordLetter::F, -1) => Some(CoordLetter::E),
-            (&CoordLetter::G, -1) => Some(CoordLetter::F),
-            (&CoordLetter::H, -1) => Some(CoordLetter::G),
-            (&CoordLetter::I, -1) => Some(CoordLetter::H),
-            (&CoordLetter::J, -1) => Some(CoordLetter::I),
-            (&CoordLetter::A, 2) => Some(CoordLetter::C),
-            (&CoordLetter::B, 2) => Some(CoordLetter::D),
-            (&CoordLetter::C, 2) => Some(CoordLetter::E),
-            (&CoordLetter::D, 2) => Some(CoordLetter::F),
-            (&CoordLetter::E, 2) => Some(CoordLetter::G),
-            (&CoordLetter::F, 2) => Some(CoordLetter::H),
-            (&CoordLetter::G, 2) => Some(CoordLetter::I),
-            (&CoordLetter::H, 2) => Some(CoordLetter::J),
-            (&CoordLetter::C, -2) => Some(CoordLetter::A),
-            (&CoordLetter::D, -2) => Some(CoordLetter::B),
-            (&CoordLetter::E, -2) => Some(CoordLetter::C),
-            (&CoordLetter::F, -2) => Some(CoordLetter::D),
-            (&CoordLetter::G, -2) => Some(CoordLetter::E),
-            (&CoordLetter::H, -2) => Some(CoordLetter::F),
-            (&CoordLetter::I, -2) => Some(CoordLetter::G),
-            (&CoordLetter::J, -2) => Some(CoordLetter::H),
-            (&CoordLetter::A, 3) => Some(CoordLetter::D),
-            (&CoordLetter::B, 3) => Some(CoordLetter::E),
-            (&CoordLetter::C, 3) => Some(CoordLetter::F),
-            (&CoordLetter::D, 3) => Some(CoordLetter::G),
-            (&CoordLetter::E, 3) => Some(CoordLetter::H),
-            (&CoordLetter::F, 3) => Some(CoordLetter::I),
-            (&CoordLetter::G, 3) => Some(CoordLetter::J),
-            (&CoordLetter::D, -3) => Some(CoordLetter::A),
-            (&CoordLetter::E, -3) => Some(CoordLetter::B),
-            (&CoordLetter::F, -3) => Some(CoordLetter::C),
-            (&CoordLetter::G, -3) => Some(CoordLetter::D),
-            (&CoordLetter::H, -3) => Some(CoordLetter::E),
-            (&CoordLetter::I, -3) => Some(CoordLetter::F),
-            (&CoordLetter::J, -3) => Some(CoordLetter::G),
-            _ => None,
+        let moved_usize: i32 = ((*self as usize) as i32) + offset;
+        if moved_usize < 0 {
+            return None;
         }
+        if moved_usize == 0 {
+            return Some(self.clone());
+        }
+        if moved_usize > 9 {
+            return None;
+        }
+        return Some(CoordLetter::from(moved_usize as usize));
     }
 }
 
@@ -103,18 +61,18 @@ impl Clone for CoordLetter {
 
 impl PartialEq for CoordLetter {
     fn eq(&self, other: &CoordLetter) -> bool {
+        use CoordLetter::*;
         match (self, other) {
-            // TODO: a nicer way
-            (&CoordLetter::A, &CoordLetter::A) => true,
-            (&CoordLetter::B, &CoordLetter::B) => true,
-            (&CoordLetter::C, &CoordLetter::C) => true,
-            (&CoordLetter::D, &CoordLetter::D) => true,
-            (&CoordLetter::E, &CoordLetter::E) => true,
-            (&CoordLetter::F, &CoordLetter::F) => true,
-            (&CoordLetter::G, &CoordLetter::G) => true,
-            (&CoordLetter::H, &CoordLetter::H) => true,
-            (&CoordLetter::I, &CoordLetter::I) => true,
-            (&CoordLetter::J, &CoordLetter::J) => true,
+            (&A, &A) => true,
+            (&B, &B) => true,
+            (&C, &C) => true,
+            (&D, &D) => true,
+            (&E, &E) => true,
+            (&F, &F) => true,
+            (&G, &G) => true,
+            (&H, &H) => true,
+            (&I, &I) => true,
+            (&J, &J) => true,
             _ => false,
         }
     }
@@ -122,36 +80,36 @@ impl PartialEq for CoordLetter {
 
 impl From<usize> for CoordLetter {
     fn from(u: usize) -> CoordLetter {
+        use CoordLetter::*;
         match u % 10 {
-            0 => CoordLetter::A,
-            1 => CoordLetter::B,
-            2 => CoordLetter::C,
-            3 => CoordLetter::D,
-            4 => CoordLetter::E,
-            5 => CoordLetter::F,
-            6 => CoordLetter::G,
-            7 => CoordLetter::H,
-            8 => CoordLetter::I,
-            _ => CoordLetter::J,
+            0 => A,
+            1 => B,
+            2 => C,
+            3 => D,
+            4 => E,
+            5 => F,
+            6 => G,
+            7 => H,
+            8 => I,
+            _ => J,
         }
     }
 }
 
-// TODO: move to the console binary if only used there
 impl fmt::Display for CoordLetter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use CoordLetter::*;
         write!(f, "{}", match self {
-            // TODO: a nicer way
-            &CoordLetter::A => "A",
-            &CoordLetter::B => "B",
-            &CoordLetter::C => "C",
-            &CoordLetter::D => "D",
-            &CoordLetter::E => "E",
-            &CoordLetter::F => "F",
-            &CoordLetter::G => "G",
-            &CoordLetter::H => "H",
-            &CoordLetter::I => "I",
-            &CoordLetter::J => "J",
+            &A => "A",
+            &B => "B",
+            &C => "C",
+            &D => "D",
+            &E => "E",
+            &F => "F",
+            &G => "G",
+            &H => "H",
+            &I => "I",
+            &J => "J",
         })
     }
 }
@@ -163,75 +121,33 @@ pub enum CoordNum {
 
 impl CoordNum {
     pub fn new(from: &str) -> Option<CoordNum> {
+        use CoordNum::*;
         match from {
-            // TODO: a nicer way
-            "1" => Some(CoordNum::One),
-            "2" => Some(CoordNum::Two),
-            "3" => Some(CoordNum::Three),
-            "4" => Some(CoordNum::Four),
-            "5" => Some(CoordNum::Five),
-            "6" => Some(CoordNum::Six),
-            "7" => Some(CoordNum::Seven),
-            "8" => Some(CoordNum::Eight),
-            "9" => Some(CoordNum::Nine),
-            "10" => Some(CoordNum::Ten),
+            "1" => Some(One),
+            "2" => Some(Two),
+            "3" => Some(Three),
+            "4" => Some(Four),
+            "5" => Some(Five),
+            "6" => Some(Six),
+            "7" => Some(Seven),
+            "8" => Some(Eight),
+            "9" => Some(Nine),
+            "10" => Some(Ten),
             _ => None,
         }
     }
     pub fn new_moved_by(&self, offset: i32) -> Option<CoordNum> {
-        match (self, offset) {
-            // TODO: a nicer way
-            (_, 0) => Some(self.clone()),
-            (&CoordNum::One, 1) => Some(CoordNum::Two),
-            (&CoordNum::Two, 1) => Some(CoordNum::Three),
-            (&CoordNum::Three, 1) => Some(CoordNum::Four),
-            (&CoordNum::Four, 1) => Some(CoordNum::Five),
-            (&CoordNum::Five, 1) => Some(CoordNum::Six),
-            (&CoordNum::Six, 1) => Some(CoordNum::Seven),
-            (&CoordNum::Seven, 1) => Some(CoordNum::Eight),
-            (&CoordNum::Eight, 1) => Some(CoordNum::Nine),
-            (&CoordNum::Nine, 1) => Some(CoordNum::Ten),
-            (&CoordNum::Two, -1) => Some(CoordNum::One),
-            (&CoordNum::Three, -1) => Some(CoordNum::Two),
-            (&CoordNum::Four, -1) => Some(CoordNum::Three),
-            (&CoordNum::Five, -1) => Some(CoordNum::Four),
-            (&CoordNum::Six, -1) => Some(CoordNum::Five),
-            (&CoordNum::Seven, -1) => Some(CoordNum::Six),
-            (&CoordNum::Eight, -1) => Some(CoordNum::Seven),
-            (&CoordNum::Nine, -1) => Some(CoordNum::Eight),
-            (&CoordNum::Ten, -1) => Some(CoordNum::Nine),
-            (&CoordNum::One, 2) => Some(CoordNum::Three),
-            (&CoordNum::Two, 2) => Some(CoordNum::Four),
-            (&CoordNum::Three, 2) => Some(CoordNum::Five),
-            (&CoordNum::Four, 2) => Some(CoordNum::Six),
-            (&CoordNum::Five, 2) => Some(CoordNum::Seven),
-            (&CoordNum::Six, 2) => Some(CoordNum::Eight),
-            (&CoordNum::Seven, 2) => Some(CoordNum::Nine),
-            (&CoordNum::Eight, 2) => Some(CoordNum::Ten),
-            (&CoordNum::Three, -2) => Some(CoordNum::One),
-            (&CoordNum::Four, -2) => Some(CoordNum::Two),
-            (&CoordNum::Five, -2) => Some(CoordNum::Three),
-            (&CoordNum::Six, -2) => Some(CoordNum::Four),
-            (&CoordNum::Seven, -2) => Some(CoordNum::Five),
-            (&CoordNum::Eight, -2) => Some(CoordNum::Six),
-            (&CoordNum::Nine, -2) => Some(CoordNum::Seven),
-            (&CoordNum::Ten, -2) => Some(CoordNum::Eight),
-            (&CoordNum::One, 3) => Some(CoordNum::Four),
-            (&CoordNum::Two, 3) => Some(CoordNum::Five),
-            (&CoordNum::Three, 3) => Some(CoordNum::Six),
-            (&CoordNum::Four, 3) => Some(CoordNum::Seven),
-            (&CoordNum::Five, 3) => Some(CoordNum::Eight),
-            (&CoordNum::Six, 3) => Some(CoordNum::Nine),
-            (&CoordNum::Seven, 3) => Some(CoordNum::Ten),
-            (&CoordNum::Four, -3) => Some(CoordNum::One),
-            (&CoordNum::Five, -3) => Some(CoordNum::Two),
-            (&CoordNum::Six, -3) => Some(CoordNum::Three),
-            (&CoordNum::Seven, -3) => Some(CoordNum::Four),
-            (&CoordNum::Eight, -3) => Some(CoordNum::Five),
-            (&CoordNum::Nine, -3) => Some(CoordNum::Six),
-            (&CoordNum::Ten, -3) => Some(CoordNum::Seven),
-            _ => None,
+        let moved_usize: i32 = ((*self as usize) as i32) + offset;
+        if moved_usize < 0 {
+            return None;
         }
+        if moved_usize == 0 {
+            return Some(self.clone());
+        }
+        if moved_usize > 9 {
+            return None;
+        }
+        return Some(CoordNum::from(moved_usize as usize));
     }
 }
 
@@ -244,18 +160,18 @@ impl Clone for CoordNum {
 
 impl PartialEq for CoordNum {
     fn eq(&self, other: &CoordNum) -> bool {
+        use CoordNum::*;
         match(self, other) {
-            // TODO: a nicer way
-            (&CoordNum::One, &CoordNum::One) => true,
-            (&CoordNum::Two, &CoordNum::Two) => true,
-            (&CoordNum::Three, &CoordNum::Three) => true,
-            (&CoordNum::Four, &CoordNum::Four) => true,
-            (&CoordNum::Five, &CoordNum::Five) => true,
-            (&CoordNum::Six, &CoordNum::Six) => true,
-            (&CoordNum::Seven, &CoordNum::Seven) => true,
-            (&CoordNum::Eight, &CoordNum::Eight) => true,
-            (&CoordNum::Nine, &CoordNum::Nine) => true,
-            (&CoordNum::Ten, &CoordNum::Ten) => true,
+            (&One, &One) => true,
+            (&Two, &Two) => true,
+            (&Three, &Three) => true,
+            (&Four, &Four) => true,
+            (&Five, &Five) => true,
+            (&Six, &Six) => true,
+            (&Seven, &Seven) => true,
+            (&Eight, &Eight) => true,
+            (&Nine, &Nine) => true,
+            (&Ten, &Ten) => true,
             _ => false,
         }
     }
@@ -263,35 +179,35 @@ impl PartialEq for CoordNum {
 
 impl From<usize> for CoordNum {
     fn from(u: usize) -> CoordNum {
+        use CoordNum::*;
         match u % 10 {
-            0 => CoordNum::One,
-            1 => CoordNum::Two,
-            2 => CoordNum::Three,
-            3 => CoordNum::Four,
-            4 => CoordNum::Five,
-            5 => CoordNum::Six,
-            6 => CoordNum::Seven,
-            7 => CoordNum::Eight,
-            8 => CoordNum::Nine,
-            _ => CoordNum::Ten,
+            0 => One,
+            1 => Two,
+            2 => Three,
+            3 => Four,
+            4 => Five,
+            5 => Six,
+            6 => Seven,
+            7 => Eight,
+            8 => Nine,
+            _ => Ten,
         }
     }
 }
-// TODO: move to the console binary if only used there
 impl fmt::Display for CoordNum {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use CoordNum::*;
         write!(f, "{}", match self {
-            // TODO: a nicer way
-            &CoordNum::One => "1",
-            &CoordNum::Two => "2",
-            &CoordNum::Three => "3",
-            &CoordNum::Four => "4",
-            &CoordNum::Five => "5",
-            &CoordNum::Six => "6",
-            &CoordNum::Seven => "7",
-            &CoordNum::Eight => "8",
-            &CoordNum::Nine => "9",
-            &CoordNum::Ten => "10",
+            &One => "1",
+            &Two => "2",
+            &Three => "3",
+            &Four => "4",
+            &Five => "5",
+            &Six => "6",
+            &Seven => "7",
+            &Eight => "8",
+            &Nine => "9",
+            &Ten => "10",
         })
     }
 }
@@ -344,7 +260,6 @@ impl Clone for Coordinate {
     fn clone(&self) -> Coordinate { *self }
 }
 
-// TODO: move to the console binary if only used there
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.0, self.1)
@@ -366,12 +281,12 @@ pub enum Orientation {
 
 impl Orientation {
     pub fn new(from: &str) -> Option<Orientation> {
+        use Orientation::*;
         match from {
-            // TODO: a nicer way
-            "N" => Some(Orientation::North),
-            "E" => Some(Orientation::East),
-            "S" => Some(Orientation::South),
-            "W" => Some(Orientation::West),
+            "N" => Some(North),
+            "E" => Some(East),
+            "S" => Some(South),
+            "W" => Some(West),
             _ => None,
         }
     }
@@ -379,25 +294,25 @@ impl Orientation {
 
 impl From<usize> for Orientation {
     fn from(u: usize) -> Orientation {
+        use Orientation::*;
         match u % 4 {
-            0 => Orientation::North,
-            1 => Orientation::East,
-            2 => Orientation::South,
-            3 => Orientation::West,
-            _ => Orientation::North,
+            0 => North,
+            1 => East,
+            2 => South,
+            3 => West,
+            _ => North,
         }
     }
 }
 
-// TODO: move to the console binary if only used there
 impl fmt::Display for Orientation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Orientation::*;
         write!(f, "{}", match self {
-            // TODO: a nicer way
-            &Orientation::North => "N",
-            &Orientation::South => "S",
-            &Orientation::East => "E",
-            &Orientation::West => "W",
+            &North => "N",
+            &South => "S",
+            &East => "E",
+            &West => "W",
         })
     }
 }
@@ -412,14 +327,15 @@ pub struct PlanePositionIterator<'a> {
 impl<'a> Iterator for PlanePositionIterator<'a> {
     type Item = Option<Coordinate>;
     fn next(&mut self) -> Option<Option<Coordinate>> {
+        use Orientation::*;
         if self.current_tile > 8 {
             return None;
         }
         let tiles = match self.orientation {
-            &Orientation::North => vec![(-2,  1), (-1,  1), ( 0,  1), ( 1,  1), ( 2,  1), ( 0,  2), (-1,  3), ( 0,  3), ( 1,  3)],
-            &Orientation::South => vec![( 2, -1), ( 1, -1), ( 0, -1), (-1, -1), (-2, -1), ( 0, -2), ( 1, -3), ( 0, -3), (-1, -3)],
-            &Orientation::East =>  vec![(-1, -2), (-1, -1), (-1,  0), (-1,  1), (-1,  2), (-2,  0), (-3, -1), (-3,  0), (-3,  1)],
-            &Orientation::West =>  vec![( 1,  2), ( 1,  1), ( 1,  0), ( 1, -1), ( 1, -2), ( 2,  0), ( 3,  1), ( 3,  0), ( 3, -1)],
+            &North => vec![(-2,  1), (-1,  1), ( 0,  1), ( 1,  1), ( 2,  1), ( 0,  2), (-1,  3), ( 0,  3), ( 1,  3)],
+            &South => vec![( 2, -1), ( 1, -1), ( 0, -1), (-1, -1), (-2, -1), ( 0, -2), ( 1, -3), ( 0, -3), (-1, -3)],
+            &East =>  vec![(-1, -2), (-1, -1), (-1,  0), (-1,  1), (-1,  2), (-2,  0), (-3, -1), (-3,  0), (-3,  1)],
+            &West =>  vec![( 1,  2), ( 1,  1), ( 1,  0), ( 1, -1), ( 1, -2), ( 2,  0), ( 3,  1), ( 3,  0), ( 3, -1)],
         };
         let move_x = tiles[self.current_tile].0;
         let move_y = tiles[self.current_tile].1;
@@ -530,11 +446,12 @@ pub enum BombardmentResult {
 
 impl Into<bool> for BombardmentResult {
     fn into(self) -> bool {
+        use BombardmentResult::*;
         match self {
-            BombardmentResult::Retry => false,
-            BombardmentResult::Miss => false,
-            BombardmentResult::Hit => true,
-            BombardmentResult::Kill => true,
+            Retry => false,
+            Miss => false,
+            Hit => true,
+            Kill => true,
         }
     }
 }
@@ -597,9 +514,9 @@ impl Board {
                 temp_board.clear_planes();
             }
         }
-
         temp_board
     }
+
     pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<&Plane, String> {
         if self.is_in_gameplay() {
             return Err("Cannot add planes mid-game".to_string());
@@ -683,23 +600,24 @@ pub enum GamePlay {
 
 impl GamePlay {
     fn new_random_state() -> GamePlay {
+        use GamePlay::*;
         let mut rng = rand::thread_rng();
         match rng.gen() {
-            true => GamePlay::YouPlaceNewPlane,
-            false => GamePlay::OpponentPlacesNewPlane,
+            true => YouPlaceNewPlane,
+            false => OpponentPlacesNewPlane,
         }
     }
 }
 impl PartialEq for GamePlay {
     fn eq(&self, other: &GamePlay) -> bool {
+        use GamePlay::*;
         match (self, other) {
-            // TODO: a nicer way
-            (&GamePlay::YouPlaceNewPlane, &GamePlay::YouPlaceNewPlane) => true,
-            (&GamePlay::OpponentPlacesNewPlane, &GamePlay::OpponentPlacesNewPlane) => true,
-            (&GamePlay::YouBombard, &GamePlay::YouBombard) => true,
-            (&GamePlay::OpponentBombards, &GamePlay::OpponentBombards) => true,
-            (&GamePlay::YouWon, &GamePlay::YouWon) => true,
-            (&GamePlay::OpponentWon, &GamePlay::OpponentWon) => true,
+            (&YouPlaceNewPlane, &YouPlaceNewPlane) => true,
+            (&OpponentPlacesNewPlane, &OpponentPlacesNewPlane) => true,
+            (&YouBombard, &YouBombard) => true,
+            (&OpponentBombards, &OpponentBombards) => true,
+            (&YouWon, &YouWon) => true,
+            (&OpponentWon, &OpponentWon) => true,
             _ => false,
         }
     }
@@ -725,57 +643,59 @@ impl Game {
     }
 
     pub fn next_logical_state(&mut self) {
-        if self.gameplay == GamePlay::YouPlaceNewPlane {
+        use GamePlay::*;
+        if self.gameplay == YouPlaceNewPlane {
             if !self.board_opponent.is_initialized() {
-                self.gameplay = GamePlay::OpponentPlacesNewPlane;
+                self.gameplay = OpponentPlacesNewPlane;
             } else {
-                self.gameplay = GamePlay::OpponentBombards;
+                self.gameplay = OpponentBombards;
             }
             return;
         }
-        if self.gameplay == GamePlay::OpponentPlacesNewPlane {
+        if self.gameplay == OpponentPlacesNewPlane {
             if !self.board_you.is_initialized() {
-                self.gameplay = GamePlay::YouPlaceNewPlane;
+                self.gameplay = YouPlaceNewPlane;
             } else {
-                self.gameplay = GamePlay::YouBombard;
+                self.gameplay = YouBombard;
             }
             return;
         }
-        if self.gameplay == GamePlay::YouBombard {
+        if self.gameplay == YouBombard {
             if self.board_opponent.planes.len() == 0 {
-                self.gameplay = GamePlay::YouWon;
+                self.gameplay = YouWon;
             } else {
-                self.gameplay = GamePlay::OpponentBombards;
+                self.gameplay = OpponentBombards;
             }
             return;
         }
-        if self.gameplay == GamePlay::OpponentBombards {
+        if self.gameplay == OpponentBombards {
             if self.board_you.planes.len() == 0 {
-                self.gameplay = GamePlay::OpponentWon;
+                self.gameplay = OpponentWon;
             } else {
-                self.gameplay = GamePlay::YouBombard;
+                self.gameplay = YouBombard;
             }
             return;
         }
     }
     pub fn you_hit_at(&mut self, target: &str) -> BombardmentResult {
+        use BombardmentResult::*;
         match Coordinate::new(target) {
             None => {
-                BombardmentResult::Retry
+                Retry
             },
             Some(coord) => {
                 let result = self.board_opponent.hit_at(coord);
                 match result {
-                    BombardmentResult::Hit => {
+                    Hit => {
                         self.scrapbook_you.hits.push(coord.clone())
                     },
-                    BombardmentResult::Miss => {
+                    Miss => {
                         self.scrapbook_you.misses.push(coord.clone())
                     },
-                    BombardmentResult::Kill => {
+                    Kill => {
                         self.scrapbook_you.kills.push(coord.clone())
                     },
-                    BombardmentResult::Retry => {
+                    Retry => {
                     },
                 };
                 result
@@ -783,8 +703,9 @@ impl Game {
         }
     }
     pub fn opponent_hits_randomly(&mut self) -> (BombardmentResult, Option<Coordinate>) {
+        use BombardmentResult::*;
         if 0 == self.scrapbook_opponent.empty_indices.len() {
-            return (BombardmentResult::Retry, None)
+            return (Retry, None)
         }
         let wanted : usize = rand::thread_rng().gen::<usize>() % self.scrapbook_opponent.empty_indices.len();
         let ref mut indices = self.scrapbook_opponent.empty_indices;
@@ -793,21 +714,21 @@ impl Game {
             let tile = Coordinate::new_from_usize(tile_num);
             let result = self.board_you.hit_at(tile);
             match result {
-                BombardmentResult::Hit => {
+                Hit => {
                     self.scrapbook_opponent.hits.push(tile.clone())
                 },
-                BombardmentResult::Miss => {
+                Miss => {
                     self.scrapbook_opponent.misses.push(tile.clone())
                 },
-                BombardmentResult::Kill => {
+                Kill => {
                     self.scrapbook_opponent.kills.push(tile.clone())
                 },
-                BombardmentResult::Retry => {
+                Retry => {
                 },
             };
             return (result, Some(tile))
         }
-        (BombardmentResult::Retry, None)
+        (Retry, None)
     }
 }
 
