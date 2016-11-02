@@ -683,14 +683,11 @@ pub enum GamePlay {
 
 impl GamePlay {
     fn new_random_state() -> GamePlay {
-        GamePlay::YouPlaceNewPlane
-        /*
         let mut rng = rand::thread_rng();
         match rng.gen() {
             true => GamePlay::YouPlaceNewPlane,
             false => GamePlay::OpponentPlacesNewPlane,
         }
-        */
     }
 }
 impl PartialEq for GamePlay {
