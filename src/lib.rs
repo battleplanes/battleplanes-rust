@@ -1,4 +1,19 @@
+/// TODOs
+/// =====
+///
+/// * API clean-ups
+/// * the concept of a `Player`
+/// * AI improvements, levels, aiming heuristics
+///   * infer level from planes placed on board (beginner, intermediate, advanced)
+///   * set AI level player heuristics (beginner, intermediate, advanced, hack)
+/// * users and tournaments
+/// * different UIs: web, console, GUI, OpenGl
+/// * better testability, e.g. stubbing out random generators
+/// * internationalization, translation
+extern crate rand;
 use std::fmt;
+use rand::Rng;
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub enum CoordLetter {
@@ -282,6 +297,7 @@ impl fmt::Display for CoordNum {
 }
 
 #[derive(Debug)]
+#[derive(Copy)]
 pub struct Coordinate (CoordLetter, CoordNum);
 
 impl Coordinate {
@@ -297,10 +313,35 @@ impl Coordinate {
             _ => None,
         }
     }
+    pub fn new_random_coordinate() -> Coordinate {
+        let mut rng = rand::thread_rng();
+        let rand_x: usize= rng.gen_range(0, 10);
+        let rand_y: usize = rng.gen_range(0, 10);
+        Coordinate ( CoordLetter::from(rand_x), CoordNum::from(rand_y) )
+    }
+    pub fn new_from_usize(num: usize) -> Coordinate {
+        let x : usize = num % 10;
+        let y : usize = num / 10;
+        Coordinate( CoordLetter::from(x), CoordNum::from(y) )
+    }
 
-    pub fn as_usize(&self) -> (usize, usize) {
+    pub fn as_tuple(&self) -> (usize, usize) {
         (self.0 as usize, self.1 as usize)
     }
+    fn as_usize(&self) -> usize {
+        (self.1 as usize) * 10 + (self.0 as usize)
+    }
+}
+
+/// This is implemented because a hit or a miss is put both on the player's
+/// board, as well as on the opponent's scrapbook.
+///
+/// TODO
+/// ====
+/// * use a typed arena instead inside Game, see Game::you_hit_at();
+///   https://docs.rs/releases/search?query=typed+arena
+impl Clone for Coordinate {
+    fn clone(&self) -> Coordinate { *self }
 }
 
 // TODO: move to the console binary if only used there
@@ -336,19 +377,32 @@ impl Orientation {
     }
 }
 
+impl From<usize> for Orientation {
+    fn from(u: usize) -> Orientation {
+        match u % 4 {
+            0 => Orientation::North,
+            1 => Orientation::East,
+            2 => Orientation::South,
+            3 => Orientation::West,
+            _ => Orientation::North,
+        }
+    }
+}
+
 // TODO: move to the console binary if only used there
 impl fmt::Display for Orientation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
             // TODO: a nicer way
-            &Orientation::North => "North",
-            &Orientation::South => "South",
-            &Orientation::East => "East",
-            &Orientation::West => "West",
+            &Orientation::North => "N",
+            &Orientation::South => "S",
+            &Orientation::East => "E",
+            &Orientation::West => "W",
         })
     }
 }
 
+#[derive(Clone)]
 pub struct PlanePositionIterator<'a> {
     head: &'a Coordinate,
     orientation: &'a Orientation,
@@ -375,6 +429,28 @@ impl<'a> Iterator for PlanePositionIterator<'a> {
         Some(t)
     }
 }
+struct TileIterator<'a> {
+    coordinate_iterator: PlanePositionIterator<'a>,
+}
+
+impl<'a> Iterator for TileIterator<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        loop {
+            match self.coordinate_iterator.next() {
+                Some(maybe_coord) => {
+                    match maybe_coord {
+                        Some(coord) => {
+                            return Some(coord.as_usize());
+                        },
+                        None => continue,
+                    }
+                },
+                None => return None,
+            }
+        };
+    }
+}
 
 pub struct Plane {
     head: Coordinate,
@@ -396,11 +472,16 @@ impl Plane {
             _ => None,
         }
     }
-    pub fn tile_iterator(&self) -> PlanePositionIterator {
+    pub fn coordinate_iterator(&self) -> PlanePositionIterator {
         PlanePositionIterator {
             head: &self.head,
             orientation: &self.orientation,
             current_tile: 0,
+        }
+    }
+    fn tile_iterator(&self) -> TileIterator {
+        TileIterator {
+            coordinate_iterator: self.coordinate_iterator(),
         }
     }
     pub fn orientation(&self) -> &Orientation {
@@ -410,17 +491,17 @@ impl Plane {
         &self.head
     }
     pub fn is_outside_of_map(&self) -> bool {
-        self.tile_iterator().find(|x: &Option<Coordinate>| *x == None) == Some(None)
+        self.coordinate_iterator().find(|x: &Option<Coordinate>| *x == None) == Some(None)
     }
     pub fn is_overlapping_with(&self, other: &Plane) -> bool {
         if self.head == other.head {
             return true;
         }
-        for tile in self.tile_iterator().filter_map(|t| t) {
+        for tile in self.coordinate_iterator().filter_map(|t| t) {
             if tile == other.head {
                 return true;
             }
-            for other_tile in other.tile_iterator().filter_map(|t| t) {
+            for other_tile in other.coordinate_iterator().filter_map(|t| t) {
                 if tile == other_tile {
                     return true;
                 }
@@ -432,7 +513,7 @@ impl Plane {
         false
     }
     pub fn has_tile(&self, needle: &Coordinate) -> bool {
-        for coord in self.tile_iterator().filter_map(|t| t) {
+        for coord in self.coordinate_iterator().filter_map(|t| t) {
             if *needle == coord {
                 return true;
             }
@@ -441,21 +522,84 @@ impl Plane {
     }
 }
 
+pub enum BombardmentResult {
+    Hit,
+    Miss,
+    Kill,
+    Retry,
+}
+
+impl Into<bool> for BombardmentResult {
+    fn into(self) -> bool {
+        match self {
+            BombardmentResult::Retry => false,
+            BombardmentResult::Miss => false,
+            BombardmentResult::Hit => true,
+            BombardmentResult::Kill => true,
+        }
+    }
+}
+
 pub struct Board {
     planes: Vec<Plane>,
     killed_planes: Vec<Plane>,
     hits: Vec<Coordinate>,
     misses: Vec<Coordinate>,
+    kills: Vec<Coordinate>,
+    empty_indices: BTreeSet<usize>,
 }
 
 impl Board {
     pub fn new() -> Board {
+        let mut empty_indices: BTreeSet<usize> = BTreeSet::new();
+        for i in 0..100 {
+            empty_indices.insert(i);
+        }
         Board {
             planes: Vec::new(),
             killed_planes: Vec::new(),
             hits: Vec::new(),
             misses: Vec::new(),
+            kills: Vec::new(),
+            empty_indices: empty_indices,
         }
+    }
+    pub fn new_random() -> Board {
+        let mut temp_board = Board::new();
+
+        let mut rng = rand::thread_rng();
+        let mut random_orientations = [0 as usize, 1, 2, 3];
+        //TODO: better heuristics, AI levels
+        loop {
+            for _ in 0..100 {
+                let head_candidate = Coordinate::new_random_coordinate();
+                let raw_head_candidate = format!("{}", head_candidate);
+
+                rng.shuffle(&mut random_orientations);
+                for j in random_orientations.iter() {
+                    let orientation_cadidate = Orientation::from(*j as usize);
+                    let raw_orientation_candidate = format!("{}", orientation_cadidate);
+                    match temp_board.add_new_plane_at(&raw_head_candidate, &raw_orientation_candidate) {
+                        Ok(_) => {
+                            break;
+                        },
+                        Err(_msg) => {
+                            continue;
+                        }
+                    }
+                }
+                if temp_board.planes.len() == 3 {
+                    break;
+                }
+            }
+            if temp_board.planes.len() == 3 {
+                break;
+            } else {
+                temp_board.clear_planes();
+            }
+        }
+
+        temp_board
     }
     pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<&Plane, String> {
         if self.is_in_gameplay() {
@@ -474,6 +618,11 @@ impl Board {
                                 return Err(format!("Plane would overlap with another one: {}", other.id));
                             }
                         }
+                        let head_offset = plane.head.as_usize();
+                        self.empty_indices.remove(&head_offset);
+                        for tile in plane.tile_iterator() {
+                            self.empty_indices.remove(&tile);
+                        }
                         self.planes.push(plane);
                         Ok(self.planes.last().unwrap())
                     },
@@ -487,34 +636,182 @@ impl Board {
     fn is_initialized(&self) -> bool {
         self.planes.len() + self.killed_planes.len() == 3
     }
-    pub fn hit_at(&mut self, tile: &str) -> bool {
-        match Coordinate::new(tile) {
-            Some(coord) => {
-                for i in 0..self.planes.len() {
-                    if self.planes[i].has_tile(&coord) {
-                        self.hits.push(coord);
-                        return true;
-                    }
-                    if self.planes[i].head == coord {
-                        let killed_plane = self.planes.remove(i);
-                        self.killed_planes.push(killed_plane);
-                        return true;
-                    }
-                }
-                self.misses.push(coord);
-                false
-            },
-            None => false,
+    pub fn hit_at(&mut self, coord: Coordinate) -> BombardmentResult {
+        self.empty_indices.remove(&coord.as_usize());
+        for i in 0..self.planes.len() {
+            if self.planes[i].has_tile(&coord) {
+                self.hits.push(coord);
+                return BombardmentResult::Hit;
+            }
+            if self.planes[i].head == coord {
+                let killed_plane = self.planes.remove(i);
+                self.killed_planes.push(killed_plane);
+                return BombardmentResult::Kill;
+            }
         }
+        self.misses.push(coord);
+        BombardmentResult::Miss
     }
     pub fn planes(&self) -> &Vec<Plane> {
         &self.planes
+    }
+    pub fn killed_planes(&self) -> &Vec<Plane> {
+        &self.killed_planes
     }
     pub fn hits(&self) -> &Vec<Coordinate> {
         &self.hits
     }
     pub fn misses(&self) -> &Vec<Coordinate> {
         &self.misses
+    }
+    pub fn kills(&self) -> &Vec<Coordinate> {
+        &self.kills
+    }
+    pub fn clear_planes(&mut self) {
+        self.planes = Vec::new();
+    }
+}
+
+#[derive(Debug)]
+pub enum GamePlay {
+    YouPlaceNewPlane,
+    OpponentPlacesNewPlane,
+    YouBombard,
+    OpponentBombards,
+    YouWon,
+    OpponentWon,
+}
+
+impl GamePlay {
+    fn new_random_state() -> GamePlay {
+        GamePlay::YouPlaceNewPlane
+        /*
+        let mut rng = rand::thread_rng();
+        match rng.gen() {
+            true => GamePlay::YouPlaceNewPlane,
+            false => GamePlay::OpponentPlacesNewPlane,
+        }
+        */
+    }
+}
+impl PartialEq for GamePlay {
+    fn eq(&self, other: &GamePlay) -> bool {
+        match (self, other) {
+            // TODO: a nicer way
+            (&GamePlay::YouPlaceNewPlane, &GamePlay::YouPlaceNewPlane) => true,
+            (&GamePlay::OpponentPlacesNewPlane, &GamePlay::OpponentPlacesNewPlane) => true,
+            (&GamePlay::YouBombard, &GamePlay::YouBombard) => true,
+            (&GamePlay::OpponentBombards, &GamePlay::OpponentBombards) => true,
+            (&GamePlay::YouWon, &GamePlay::YouWon) => true,
+            (&GamePlay::OpponentWon, &GamePlay::OpponentWon) => true,
+            _ => false,
+        }
+    }
+}
+
+pub struct Game {
+    pub gameplay: GamePlay,
+    pub board_you: Board,
+    pub board_opponent: Board,
+    pub scrapbook_you: Board,
+    pub scrapbook_opponent: Board,
+}
+
+impl Game {
+    pub fn new_random_starter() -> Game {
+        Game {
+            gameplay: GamePlay::new_random_state(),
+            board_you: Board::new(),
+            board_opponent: Board::new(),
+            scrapbook_you: Board::new(),
+            scrapbook_opponent: Board::new(),
+        }
+    }
+
+    pub fn next_logical_state(&mut self) {
+        if self.gameplay == GamePlay::YouPlaceNewPlane {
+            if !self.board_opponent.is_initialized() {
+                self.gameplay = GamePlay::OpponentPlacesNewPlane;
+            } else {
+                self.gameplay = GamePlay::OpponentBombards;
+            }
+            return;
+        }
+        if self.gameplay == GamePlay::OpponentPlacesNewPlane {
+            if !self.board_you.is_initialized() {
+                self.gameplay = GamePlay::YouPlaceNewPlane;
+            } else {
+                self.gameplay = GamePlay::YouBombard;
+            }
+            return;
+        }
+        if self.gameplay == GamePlay::YouBombard {
+            if self.board_opponent.planes.len() == 0 {
+                self.gameplay = GamePlay::YouWon;
+            } else {
+                self.gameplay = GamePlay::OpponentBombards;
+            }
+            return;
+        }
+        if self.gameplay == GamePlay::OpponentBombards {
+            if self.board_you.planes.len() == 0 {
+                self.gameplay = GamePlay::OpponentWon;
+            } else {
+                self.gameplay = GamePlay::YouBombard;
+            }
+            return;
+        }
+    }
+    pub fn you_hit_at(&mut self, target: &str) -> BombardmentResult {
+        match Coordinate::new(target) {
+            None => {
+                BombardmentResult::Retry
+            },
+            Some(coord) => {
+                let result = self.board_opponent.hit_at(coord);
+                match result {
+                    BombardmentResult::Hit => {
+                        self.scrapbook_you.hits.push(coord.clone())
+                    },
+                    BombardmentResult::Miss => {
+                        self.scrapbook_you.misses.push(coord.clone())
+                    },
+                    BombardmentResult::Kill => {
+                        self.scrapbook_you.kills.push(coord.clone())
+                    },
+                    BombardmentResult::Retry => {
+                    },
+                };
+                result
+            },
+        }
+    }
+    pub fn opponent_hits_randomly(&mut self) -> (BombardmentResult, Option<Coordinate>) {
+        if 0 == self.scrapbook_opponent.empty_indices.len() {
+            return (BombardmentResult::Retry, None)
+        }
+        let wanted : usize = rand::thread_rng().gen::<usize>() % self.scrapbook_opponent.empty_indices.len();
+        let ref mut indices = self.scrapbook_opponent.empty_indices;
+        let tile_num = *indices.iter().nth(wanted).unwrap();
+        if indices.remove(&tile_num) {
+            let tile = Coordinate::new_from_usize(tile_num);
+            let result = self.board_you.hit_at(tile);
+            match result {
+                BombardmentResult::Hit => {
+                    self.scrapbook_opponent.hits.push(tile.clone())
+                },
+                BombardmentResult::Miss => {
+                    self.scrapbook_opponent.misses.push(tile.clone())
+                },
+                BombardmentResult::Kill => {
+                    self.scrapbook_opponent.kills.push(tile.clone())
+                },
+                BombardmentResult::Retry => {
+                },
+            };
+            return (result, Some(tile))
+        }
+        (BombardmentResult::Retry, None)
     }
 }
 
@@ -588,7 +885,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_visible_north() {
         let p = Plane::new("E5", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["C6", "D6", "E6", "F6", "G6", "E7", "D8", "E8", "F8"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
@@ -598,7 +895,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_invisible_north() {
         let p = Plane::new("J10", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         for _ in 0..9 {
             assert_eq!(Some(None), iter.next());
         }
@@ -607,7 +904,7 @@ mod test {
     #[test]
     fn iterate_tiles_lefthand_invisible_north() {
         let p = Plane::new("A1", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             None, None, Coordinate::new("A2"), Coordinate::new("B2"), Coordinate::new("C2"),
             Coordinate::new("A3"),
@@ -621,7 +918,7 @@ mod test {
     #[test]
     fn iterate_tiles_righthand_invisible_north() {
         let p = Plane::new("J1", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             Coordinate::new("H2"), Coordinate::new("I2"), Coordinate::new("J2"), None, None,
             Coordinate::new("J3"),
@@ -635,7 +932,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_visible_south() {
         let p = Plane::new("E5", "S").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["G4", "F4", "E4", "D4", "C4", "E3", "F2", "E2", "D2"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
@@ -645,7 +942,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_invisible_south() {
         let p = Plane::new("J10", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         for _ in 0..9 {
             assert_eq!(Some(None), iter.next());
         }
@@ -654,7 +951,7 @@ mod test {
     #[test]
     fn iterate_tiles_lefthand_invisible_south() {
         let p = Plane::new("A1", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             None, None, Coordinate::new("A2"), Coordinate::new("B2"), Coordinate::new("C2"),
             Coordinate::new("A3"),
@@ -668,7 +965,7 @@ mod test {
     #[test]
     fn iterate_tiles_righthand_invisible_south() {
         let p = Plane::new("J1", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             Coordinate::new("H2"), Coordinate::new("I2"), Coordinate::new("J2"), None, None,
             Coordinate::new("J3"),
@@ -682,7 +979,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_visible_east() {
         let p = Plane::new("E5", "E").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["D3", "D4", "D5", "D6", "D7", "C5", "B4", "B5", "B6"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
@@ -692,7 +989,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_invisible_east() {
         let p = Plane::new("A10", "E").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         for _ in 0..9 {
             assert_eq!(Some(None), iter.next());
         }
@@ -701,7 +998,7 @@ mod test {
     #[test]
     fn iterate_tiles_lefthand_invisible_east() {
         let p = Plane::new("J1", "E").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             None, None, Coordinate::new("I1"), Coordinate::new("I2"), Coordinate::new("I3"),
             Coordinate::new("H1"),
@@ -715,7 +1012,7 @@ mod test {
     #[test]
     fn iterate_tiles_righthand_invisible_east() {
         let p = Plane::new("J10", "E").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             Coordinate::new("I8"), Coordinate::new("I9"), Coordinate::new("I10"), None, None,
             Coordinate::new("H10"),
@@ -729,7 +1026,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_visible_west() {
         let p = Plane::new("E5", "W").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["F7", "F6", "F5", "F4", "F3", "G5", "H6", "H5", "H4"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
@@ -739,7 +1036,7 @@ mod test {
     #[test]
     fn iterate_tiles_all_invisible_west() {
         let p = Plane::new("J10", "W").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         for _ in 0..9 {
             assert_eq!(Some(None), iter.next());
         }
@@ -748,7 +1045,7 @@ mod test {
     #[test]
     fn bug_tiles_all_visible_h7_n() {
         let p = Plane::new("H7", "N").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["F8", "G8", "H8", "I8", "J8", "H9", "G10", "H10", "I10"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
@@ -758,7 +1055,7 @@ mod test {
     #[test]
     fn iterate_tiles_lefthand_invisible_west() {
         let p = Plane::new("A10", "W").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             None, None, Coordinate::new("B10"), Coordinate::new("B9"), Coordinate::new("B8"),
             Coordinate::new("C10"),
@@ -772,7 +1069,7 @@ mod test {
     #[test]
     fn iterate_tiles_righthand_invisible_west() {
         let p = Plane::new("A1", "W").unwrap();
-        let mut iter = p.tile_iterator();
+        let mut iter = p.coordinate_iterator();
         let expected_coordinates : Vec<Option<Coordinate>> = vec![
             Coordinate::new("B3"), Coordinate::new("B2"), Coordinate::new("B1"), None, None,
             Coordinate::new("C1"),
