@@ -412,7 +412,6 @@ pub struct PlanePositionIterator<'a> {
 impl<'a> Iterator for PlanePositionIterator<'a> {
     type Item = Option<Coordinate>;
     fn next(&mut self) -> Option<Option<Coordinate>> {
-        // TODO: a nicer way
         if self.current_tile > 8 {
             return None;
         }
