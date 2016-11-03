@@ -5,3 +5,12 @@ authors = ["Flavius Aspra <flavius.as@gmail.com>"]
 
 [dependencies]
 rand = "0.3.14"
+iron = "0.4.0"
+handlebars-iron = "0.19.2"
+env_logger = "^0.3.2"
+log = "^0.3"
+walkdir = "^0.1"
+notify = { version = "^2.5", optional = true }
+router = "^0.2.0"
+mount = "0.2.1"
+staticfile = "*"
