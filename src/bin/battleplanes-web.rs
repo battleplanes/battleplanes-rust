@@ -104,20 +104,14 @@ mod template {
                 });
             }
         }
-        for (plane_num, plane) in board.planes().iter().enumerate() {
+        for plane in board.planes() {
             let (head_x, head_y) = plane.head().as_tuple();
             grid[head_x][head_y].class = format!("plane-{}", plane.id());
 
-            for (tile_num, maybe_tile) in plane.coordinate_iterator().enumerate() {
-                match maybe_tile {
-                    Some(tile) => {
-                        let (tile_x, tile_y) = tile.as_tuple();
-                        grid[tile_x][tile_y].content = " ".to_string();
-                        grid[tile_x][tile_y].class = format!("plane-{}", plane.id());
-                    },
-                    None => {
-                    }
-                }
+            for tile in plane.coordinate_iterator().filter_map(|t| t) {
+                let (tile_x, tile_y) = tile.as_tuple();
+                grid[tile_x][tile_y].content = " ".to_string();
+                grid[tile_x][tile_y].class = format!("plane-{}", plane.id());
             }
         }
         for hit in board.hits() {
@@ -128,22 +122,16 @@ mod template {
             let (miss_x, miss_y) = miss.as_tuple();
             grid[miss_x][miss_y].content = "●".to_string();
         }
-        for (plane_num, killed) in board.killed_planes().iter().enumerate() {
+        for killed in board.killed_planes() {
             let (killed_x, killed_y) = killed.head().as_tuple();
             grid[killed_x][killed_y].content = "✕".to_string();
 
             grid[killed_x][killed_y].class = format!("plane-killed-{}", killed.id());
             
-            for (tile_num, maybe_tile) in killed.coordinate_iterator().enumerate() {
-                match maybe_tile {
-                    Some(tile) => {
-                        let (tile_x, tile_y) = tile.as_tuple();
-                        grid[tile_x][tile_y].content = " ".to_string();
-                        grid[tile_x][tile_y].class = format!("plane-killed-{}", killed.id());
-                    },
-                    None => {
-                    }
-                }
+            for tile in killed.coordinate_iterator().filter_map(|t| t) {
+                let (tile_x, tile_y) = tile.as_tuple();
+                grid[tile_x][tile_y].content = " ".to_string();
+                grid[tile_x][tile_y].class = format!("plane-killed-{}", killed.id());
             }
         }
 
