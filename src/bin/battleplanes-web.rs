@@ -9,6 +9,7 @@ extern crate env_logger;
 extern crate maud;
 extern crate iron_sessionstorage;
 extern crate uuid;
+extern crate persistent;
 
 extern crate battleplanes;
 
@@ -34,6 +35,18 @@ impl iron_sessionstorage::Value for SessionId {
         Some(SessionId(value))
     }
 }
+
+#[derive(Copy, Clone)]
+pub struct GamePool;
+
+impl GamePool {
+    fn new() -> GamePool {
+        GamePool {
+        }
+    }
+}
+
+impl iron::typemap::Key for GamePool { type Value = i32; }
 
 mod data {
     use std::collections::BTreeMap;
@@ -183,6 +196,14 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
     resp
 }
 
+fn action_hits(req: &mut Request) -> IronResult<Response> {
+    let lock = req.get::<persistent::State<GamePool>>().unwrap();
+    let mut gamepool = lock.write().unwrap();
+
+    *gamepool += 1;
+    Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
+}
+
 fn main() {
     //TODO: load secret from env
     let my_secret = b"verysecret".to_vec();
@@ -191,6 +212,7 @@ fn main() {
     let mut router = Router::new();
     router.get("/", action_index);
     router.get("/randomgrid", action_randomgrid);
+    router.get("/hits", action_hits);
 
     let mut assets_mount = Mount::new();
     assets_mount
@@ -198,6 +220,7 @@ fn main() {
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
+    chain.link(persistent::State::<GamePool>::both(GamePool::new()));
     println!("Server running at http://localhost:3000/");
     Iron::new(chain).http("localhost:3000").unwrap();
 }
