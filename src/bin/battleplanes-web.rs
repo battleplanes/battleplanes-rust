@@ -39,14 +39,7 @@ impl iron_sessionstorage::Value for SessionId {
 #[derive(Copy, Clone)]
 pub struct GamePool;
 
-impl GamePool {
-    fn new() -> GamePool {
-        GamePool {
-        }
-    }
-}
-
-impl iron::typemap::Key for GamePool { type Value = i32; }
+impl iron::typemap::Key for GamePool { type Value = usize; }
 
 mod data {
     use std::collections::BTreeMap;
@@ -220,7 +213,7 @@ fn main() {
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
-    chain.link(persistent::State::<GamePool>::both(GamePool::new()));
+    chain.link(persistent::State::<GamePool>::both(0));
     println!("Server running at http://localhost:3000/");
     Iron::new(chain).http("localhost:3000").unwrap();
 }
