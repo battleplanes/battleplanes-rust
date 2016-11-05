@@ -42,9 +42,6 @@ impl CoordLetter {
         if moved_usize < 0 {
             return None;
         }
-        if moved_usize == 0 {
-            return Some(self.clone());
-        }
         if moved_usize > 9 {
             return None;
         }
@@ -140,9 +137,6 @@ impl CoordNum {
         let moved_usize: i32 = ((*self as usize) as i32) + offset;
         if moved_usize < 0 {
             return None;
-        }
-        if moved_usize == 0 {
-            return Some(self.clone());
         }
         if moved_usize > 9 {
             return None;
@@ -964,6 +958,16 @@ mod test {
         let p = Plane::new("H7", "N").unwrap();
         let mut iter = p.coordinate_iterator();
         let expected_coordinates = vec!["F8", "G8", "H8", "I8", "J8", "H9", "G10", "H10", "I10"];
+        for expected in expected_coordinates {
+            assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
+        }
+        assert_eq!(None, iter.next());
+    }
+    #[test]
+    fn bug_tiles_all_visible_a3_w() {
+        let p = Plane::new("A3", "W").unwrap();
+        let mut iter = p.coordinate_iterator();
+        let expected_coordinates = vec!["B5", "B4", "B3", "B2", "B1", "C3", "D4", "D3", "D2"];
         for expected in expected_coordinates {
             assert_eq!(expected, format!("{}", iter.next().unwrap().unwrap()));
         }
