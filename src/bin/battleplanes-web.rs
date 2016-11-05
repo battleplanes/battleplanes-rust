@@ -236,7 +236,7 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
 fn action_hits(req: &mut Request) -> IronResult<Response> {
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
-    let mut gamepool = &arc.write().ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
     gamepool.increment();
     Ok(Response::with((status::Ok, format!("Hits: {}", gamepool.map))))
 }
