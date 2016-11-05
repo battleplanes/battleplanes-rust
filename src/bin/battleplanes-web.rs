@@ -9,16 +9,20 @@ extern crate env_logger;
 extern crate maud;
 extern crate iron_sessionstorage;
 extern crate uuid;
-extern crate persistent;
+extern crate concurrent_hashmap;
+extern crate plugin;
 
 extern crate battleplanes;
+
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+use std::fmt;
 
 use iron::prelude::*;
 use iron::status;
 use mount::Mount;
 use router::Router;
 use staticfile::Static;
-use std::path::Path;
 use uuid::Uuid;
 
 use iron_sessionstorage::traits::*;
@@ -37,9 +41,49 @@ impl iron_sessionstorage::Value for SessionId {
 }
 
 #[derive(Copy, Clone)]
-pub struct GamePool;
+pub struct GamePool {
+    pub map: u32,
+}
 
-impl iron::typemap::Key for GamePool { type Value = usize; }
+impl GamePool {
+    fn increment(&mut self) {
+        self.map += 1;
+    }
+}
+impl fmt::Display for GamePool {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.map)
+    }
+}
+
+#[derive(Clone)]
+pub struct GamePoolMiddleware {
+    data: Arc<RwLock<GamePool>>,
+}
+impl GamePoolMiddleware {
+    fn new() -> GamePoolMiddleware {
+        GamePoolMiddleware {
+            data: Arc::new(RwLock::new(GamePool { map: 0 })),
+        }
+    }
+}
+
+impl iron::typemap::Key for GamePoolMiddleware { type Value = Arc<RwLock<GamePool>>; }
+
+impl iron::BeforeMiddleware for GamePoolMiddleware {
+    fn before(&self, r: &mut Request) -> IronResult<()> {
+        r.extensions.insert::<GamePoolMiddleware>(self.data.clone());
+        Ok(())
+    }
+}
+
+impl<'a, 'b> plugin::Plugin<Request<'a, 'b>> for GamePoolMiddleware {
+    type Error = String;
+    fn eval(req: &mut Request<'a, 'b>) -> Result<Arc<RwLock<GamePool>>, String> {
+        req.extensions.get::<GamePoolMiddleware>().cloned().ok_or("Not found".to_string())
+    }
+}
+
 
 mod data {
     use std::collections::BTreeMap;
@@ -190,11 +234,11 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
 }
 
 fn action_hits(req: &mut Request) -> IronResult<Response> {
-    let lock = req.get::<persistent::State<GamePool>>().unwrap();
-    let mut gamepool = lock.write().unwrap();
-
-    *gamepool += 1;
-    Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = &arc.write().ok().unwrap();
+    gamepool.increment();
+    Ok(Response::with((status::Ok, format!("Hits: {}", gamepool.map))))
 }
 
 fn main() {
@@ -213,7 +257,8 @@ fn main() {
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
-    chain.link(persistent::State::<GamePool>::both(0));
+    let gamepool = GamePoolMiddleware::new();
+    chain.link_before(gamepool);
     println!("Server running at http://localhost:3000/");
     Iron::new(chain).http("localhost:3000").unwrap();
 }
