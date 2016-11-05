@@ -7,6 +7,8 @@ extern crate mount;
 extern crate staticfile;
 extern crate env_logger;
 extern crate maud;
+extern crate iron_sessionstorage;
+extern crate uuid;
 
 extern crate battleplanes;
 
@@ -16,6 +18,22 @@ use mount::Mount;
 use router::Router;
 use staticfile::Static;
 use std::path::Path;
+use uuid::Uuid;
+
+use iron_sessionstorage::traits::*;
+use iron_sessionstorage::SessionStorage;
+use iron_sessionstorage::backends::SignedCookieBackend;
+
+struct SessionId(String);
+
+impl iron_sessionstorage::Value for SessionId {
+    fn get_key() -> &'static str { "sessionid" }
+    fn into_raw(self) -> String { self.0 }
+    fn from_raw(value: String) -> Option<Self> {
+        // Maybe validate that only 'a's are in the string
+        Some(SessionId(value))
+    }
+}
 
 mod data {
     use std::collections::BTreeMap;
@@ -139,9 +157,7 @@ mod template {
     }
 }
 
-fn action_index(r: &mut Request) -> IronResult<Response> {
-    use data::*;
-
+fn action_randomgrid(r: &mut Request) -> IronResult<Response> {
     let mut resp = Response::new();
     let mut random_board = battleplanes::Board::new_random();
     for _ in 0..20 {
@@ -155,17 +171,33 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
     Ok(resp)
 }
 
+fn action_index(r: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(r.session().get::<SessionId>()) {
+        Some(sessionid) => sessionid,
+        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
+    };
+    let mut resp = Ok(Response::with(format!(
+                "Reload to add a char {}", sessionid.0
+    )));
+    try!(r.session().set(sessionid));
+    resp
+}
+
 fn main() {
+    //TODO: load secret from env
+    let my_secret = b"verysecret".to_vec();
     env_logger::init().unwrap();
 
     let mut router = Router::new();
     router.get("/", action_index);
+    router.get("/randomgrid", action_randomgrid);
 
     let mut assets_mount = Mount::new();
     assets_mount
         .mount("/", router)
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
+    chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
     println!("Server running at http://localhost:3000/");
     Iron::new(chain).http("localhost:3000").unwrap();
 }
