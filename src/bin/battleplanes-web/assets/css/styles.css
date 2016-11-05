@@ -17,3 +17,25 @@ table.battleplanes-board thead {
   border-collapse: collapse;
   table-layout: fixed;
 }
+
+.plane-1 {
+    background: red;
+}
+.plane-2 {
+    background: blue;
+}
+.plane-3 {
+    background: green;
+}
+.plane-killed-1 {
+    background: red;
+    opacity: 0.5;
+}
+.plane-killed-2 {
+    background: blue;
+    opacity: 0.5;
+}
+.plane-killed-3 {
+    background: green;
+    opacity: 0.5;
+}

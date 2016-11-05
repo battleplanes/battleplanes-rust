@@ -429,6 +429,9 @@ impl Plane {
         }
         return false;
     }
+    pub fn id(&self) -> usize {
+        self.id
+    }
 }
 
 pub enum BombardmentResult {

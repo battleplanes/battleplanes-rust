@@ -54,7 +54,8 @@ mod template {
             }
         }
     }
-    pub fn battleplanes_board() -> maud::Markup {
+    pub fn battleplanes_board(board: ::battleplanes::Board) -> maud::Markup {
+        let grid = get_normalized_grid(board);
         html! {
             table.battleplanes-board {
                 thead {
@@ -77,7 +78,7 @@ mod template {
                                 (rownum+1)
                             }
                             @for colnum in 0..10 {
-                                td { " " }
+                                td class=(grid[rownum][colnum].class) { (grid[rownum][colnum].content) }
                             }
                         }
                     }
@@ -85,14 +86,82 @@ mod template {
             }
         }
     }
+
+    #[derive(Clone)]
+    struct HtmlCellProperties {
+        class: String,
+        content: String,
+    }
+
+    fn get_normalized_grid(board: ::battleplanes::Board) -> Vec<Vec<HtmlCellProperties>> {
+        let mut grid : Vec<Vec<HtmlCellProperties>> = Vec::with_capacity(10);
+        for i in 0..10 {
+            grid.push(Vec::new());
+            for _ in 0..10 {
+                grid[i].push(HtmlCellProperties {
+                    class: "".to_string(),
+                    content: " ".to_string(),
+                });
+            }
+        }
+        for (plane_num, plane) in board.planes().iter().enumerate() {
+            let (head_x, head_y) = plane.head().as_tuple();
+            grid[head_x][head_y].class = format!("plane-{}", plane.id());
+
+            for (tile_num, maybe_tile) in plane.coordinate_iterator().enumerate() {
+                match maybe_tile {
+                    Some(tile) => {
+                        let (tile_x, tile_y) = tile.as_tuple();
+                        grid[tile_x][tile_y].content = " ".to_string();
+                        grid[tile_x][tile_y].class = format!("plane-{}", plane.id());
+                    },
+                    None => {
+                    }
+                }
+            }
+        }
+        for hit in board.hits() {
+            let (hit_x, hit_y) = hit.as_tuple();
+            grid[hit_x][hit_y].content = "✕".to_string();
+        }
+        for miss in board.misses() {
+            let (miss_x, miss_y) = miss.as_tuple();
+            grid[miss_x][miss_y].content = "●".to_string();
+        }
+        for (plane_num, killed) in board.killed_planes().iter().enumerate() {
+            let (killed_x, killed_y) = killed.head().as_tuple();
+            grid[killed_x][killed_y].content = "✕".to_string();
+
+            grid[killed_x][killed_y].class = format!("plane-killed-{}", killed.id());
+            
+            for (tile_num, maybe_tile) in killed.coordinate_iterator().enumerate() {
+                match maybe_tile {
+                    Some(tile) => {
+                        let (tile_x, tile_y) = tile.as_tuple();
+                        grid[tile_x][tile_y].content = " ".to_string();
+                        grid[tile_x][tile_y].class = format!("plane-killed-{}", killed.id());
+                    },
+                    None => {
+                    }
+                }
+            }
+        }
+
+        grid
+    }
 }
 
 fn action_index(r: &mut Request) -> IronResult<Response> {
     use data::*;
 
     let mut resp = Response::new();
-    let data = make_data();
-    let index_markup = template::battleplanes_board();
+    let mut random_board = battleplanes::Board::new_random();
+    for _ in 0..20 {
+        let hit = battleplanes::Coordinate::new_random_coordinate();
+        random_board.hit_at(hit);
+    }
+
+    let index_markup = template::battleplanes_board(random_board);
     let template = template::with_layout(index_markup);
     resp.set_mut(template).set_mut(status::Ok);
     Ok(resp)
