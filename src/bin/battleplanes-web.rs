@@ -84,6 +84,21 @@ impl<'a, 'b> plugin::Plugin<Request<'a, 'b>> for GamePoolMiddleware {
     }
 }
 
+/*
+// TODO: helper method attached to request
+// example of clean implementation of middleware: 
+// https://github.com/iron/iron-sessionstorage/blob/master/src/lib.rs
+pub trait GamePoolRequestExt {
+    fn gamepool(&mut self) -> &mut GamePool;
+}
+
+impl<'a, 'b> GamePoolRequestExt for Request<'a, 'b> {
+    fn gamepool(&mut self) -> &mut GamePool {
+        let mut middleware = self.extensions.get_mut::<GamePoolMiddleware>().unwrap();
+        middleware.write().ok().unwrap()
+    }
+}
+*/
 
 mod data {
     use std::collections::BTreeMap;
