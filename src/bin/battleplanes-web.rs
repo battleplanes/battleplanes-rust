@@ -51,7 +51,7 @@ impl iron_sessionstorage::Value for SessionId {
 
 #[derive(Clone)]
 pub struct GamePool {
-    games: ConcHashMap<String, Arc<battleplanes::Game>>,
+    games: ConcHashMap<String, battleplanes::Game>,
     ai_initial_boards: ConcHashMap<String, Arc<battleplanes::Board>>,
 }
 
@@ -69,7 +69,7 @@ impl GamePool {
         match self.games.find_mut(&key) {
             Some(mut game) => game.get(),
             None => {
-                self.games.insert(key.clone(), Arc::new(battleplanes::Game::new_random_starter()));
+                self.games.insert(key.clone(), battleplanes::Game::new_random_starter());
                 self.games.find_mut(&key).unwrap().get()
             }
         }
@@ -94,7 +94,7 @@ impl GamePoolMiddleware {
     fn new() -> GamePoolMiddleware {
         GamePoolMiddleware {
             data: Arc::new(RwLock::new(GamePool {
-                games: ConcHashMap::<String, Arc<battleplanes::Game>>::new(),
+                games: ConcHashMap::<String, battleplanes::Game>::new(),
                 ai_initial_boards: ConcHashMap::<String, Arc<battleplanes::Board>>::new(),
             })),
         }
@@ -280,11 +280,20 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
         Some(sessionid) => sessionid,
         None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
     };
-    let mut resp = Ok(Response::with(format!(
-                "Reload to add a char {}", sessionid.0
-    )));
+
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+    let mut resp = Response::new();
+
+    let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
+    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+
+    let index_markup = template::battleplanes_board(ai_board);
+    let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
-    resp
+    resp.set_mut(template).set_mut(status::Ok);
+    Ok(resp)
 }
 
 fn action_hits(req: &mut Request) -> IronResult<Response> {
