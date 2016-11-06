@@ -9,15 +9,20 @@ extern crate env_logger;
 extern crate maud;
 extern crate iron_sessionstorage;
 extern crate uuid;
+extern crate concurrent_hashmap;
+extern crate plugin;
 
 extern crate battleplanes;
+
+use std::path::Path;
+use std::sync::{Arc, RwLock};
+use std::fmt;
 
 use iron::prelude::*;
 use iron::status;
 use mount::Mount;
 use router::Router;
 use staticfile::Static;
-use std::path::Path;
 use uuid::Uuid;
 
 use iron_sessionstorage::traits::*;
@@ -34,6 +39,66 @@ impl iron_sessionstorage::Value for SessionId {
         Some(SessionId(value))
     }
 }
+
+#[derive(Copy, Clone)]
+pub struct GamePool {
+    pub map: u32,
+}
+
+impl GamePool {
+    fn increment(&mut self) {
+        self.map += 1;
+    }
+}
+impl fmt::Display for GamePool {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.map)
+    }
+}
+
+#[derive(Clone)]
+pub struct GamePoolMiddleware {
+    data: Arc<RwLock<GamePool>>,
+}
+impl GamePoolMiddleware {
+    fn new() -> GamePoolMiddleware {
+        GamePoolMiddleware {
+            data: Arc::new(RwLock::new(GamePool { map: 0 })),
+        }
+    }
+}
+
+impl iron::typemap::Key for GamePoolMiddleware { type Value = Arc<RwLock<GamePool>>; }
+
+impl iron::BeforeMiddleware for GamePoolMiddleware {
+    fn before(&self, r: &mut Request) -> IronResult<()> {
+        r.extensions.insert::<GamePoolMiddleware>(self.data.clone());
+        Ok(())
+    }
+}
+
+impl<'a, 'b> plugin::Plugin<Request<'a, 'b>> for GamePoolMiddleware {
+    type Error = String;
+    fn eval(req: &mut Request<'a, 'b>) -> Result<Arc<RwLock<GamePool>>, String> {
+        req.extensions.get::<GamePoolMiddleware>().cloned().ok_or("Not found".to_string())
+    }
+}
+
+/*
+// TODO: helper method attached to request
+// example of clean implementation of middleware:
+// https://github.com/iron/iron-sessionstorage/blob/master/src/lib.rs
+pub trait GamePoolRequestExt {
+    fn gamepool(&mut self) -> &mut GamePool;
+}
+
+impl<'a, 'b> GamePoolRequestExt for Request<'a, 'b> {
+    fn gamepool(&mut self) -> &mut GamePool {
+        let mut middleware = self.extensions.get_mut::<GamePoolMiddleware>().unwrap();
+        middleware.write().ok().unwrap()
+    }
+}
+*/
 
 mod data {
     use std::collections::BTreeMap;
@@ -183,6 +248,14 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
     resp
 }
 
+fn action_hits(req: &mut Request) -> IronResult<Response> {
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+    gamepool.increment();
+    Ok(Response::with((status::Ok, format!("Hits: {}", gamepool.map))))
+}
+
 fn main() {
     //TODO: load secret from env
     let my_secret = b"verysecret".to_vec();
@@ -191,6 +264,7 @@ fn main() {
     let mut router = Router::new();
     router.get("/", action_index);
     router.get("/randomgrid", action_randomgrid);
+    router.get("/hits", action_hits);
 
     let mut assets_mount = Mount::new();
     assets_mount
@@ -198,6 +272,8 @@ fn main() {
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
+    let gamepool = GamePoolMiddleware::new();
+    chain.link_before(gamepool);
     println!("Server running at http://localhost:3000/");
     Iron::new(chain).http("localhost:3000").unwrap();
 }
