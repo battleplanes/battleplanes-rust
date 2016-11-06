@@ -58,46 +58,50 @@ $(document).ready(function(){
         }
     }
 
-    $("#own_board tbody td").on("mouseover", function() {
-        data = window.get_tile_coordinates($(this));
-        data.grid = $("#own_board");
-        data.tile = $(this);
-        data.grid.trigger("tileover", data);
-    });
-    $("#own_board tbody td").on("mouseout", function() {
-        data = window.get_tile_coordinates($(this));
-        data.grid = $("#own_board");
-        data.tile = $(this);
-        data.grid.trigger("tileout", data);
-    });
-    $("#own_board tbody td").on("contextmenu", function(e) {
-        e.preventDefault();
-        data = window.get_tile_coordinates($(this));
-        data.grid = $("#own_board");
-        data.tile = $(this);
-        data.grid.trigger("planerotate", data);
-    });
-    $("#own_board tbody td").on("click", function(e) {
-        data = window.get_tile_coordinates($(this));
-        data.grid = $("#own_board");
-        data.tile = $(this);
-        data.orientation = window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length];
-        data.grid.trigger("planeplaced", data);
-    });
+    if ($("#new_head").length == 1 && $("#new_orientation").length == 1) {
+        $("#own_board tbody td").on("mouseover", function() {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_board");
+            data.tile = $(this);
+            data.grid.trigger("tileover", data);
+        });
+        $("#own_board tbody td").on("mouseout", function() {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_board");
+            data.tile = $(this);
+            data.grid.trigger("tileout", data);
+        });
+        $("#own_board tbody td").on("contextmenu", function(e) {
+            e.preventDefault();
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_board");
+            data.tile = $(this);
+            data.grid.trigger("planerotate", data);
+        });
+        $("#own_board tbody td").on("click", function(e) {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_board");
+            data.tile = $(this);
+            data.orientation = window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length];
+            data.grid.trigger("planeplaced", data);
+        });
 
-    $("#own_board").on("tileover", function(ev, data) {
-        window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
-    });
-    $("#own_board").on("tileout", function(ev, data) {
-        window.unhighlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
-    });
-    $("#own_board").on("planerotate", function(e, data) {
-        window.unhighlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
-        window.current_orientation = ++window.current_orientation % window.ORIENTATIONS.length;
-        window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
-    });
-    $("#own_board").on("planeplaced", function(ev, data) {
-        $("#new_head").val(data.letter + data.number);
-        $("#new_orientation").val(data.orientation);
-    });
+        $("#own_board").on("tileover", function(ev, data) {
+            window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
+        });
+        $("#own_board").on("tileout", function(ev, data) {
+            window.unhighlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
+        });
+        $("#own_board").on("planerotate", function(e, data) {
+            window.unhighlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
+            window.current_orientation = ++window.current_orientation % window.ORIENTATIONS.length;
+            window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
+        });
+        $("#own_board").on("planeplaced", function(ev, data) {
+            $("#new_head").val(data.letter + data.number);
+            $("#new_orientation").val(data.orientation);
+        });
+    } else {
+        console.log("switching mode");
+    }
 })
