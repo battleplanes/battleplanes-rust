@@ -42,12 +42,22 @@ impl iron_sessionstorage::Value for SessionId {
 
 #[derive(Copy, Clone)]
 pub struct GamePool {
-    pub map: u32,
+    games: ConcHashMap<String, Arc<battleplanes::Game>>,
+    ai_initial_boards: ConcHashMap<String, Arc<battleplanes::Board>>,
 }
 
 impl GamePool {
     fn increment(&mut self) {
         self.map += 1;
+    }
+    fn find_game(&mut self, key: String) -> &mut battleplanes::Game {
+        match self.games.find_mut(&key) {
+            Some(mut game) => game.get(),
+            None => {
+                self.games.insert(key.clone(), Arc::new(battleplanes::Game::new_random_starter()));
+                self.games.find_mut(&key).unwrap().get()
+            }
+        }
     }
 }
 impl fmt::Display for GamePool {
@@ -63,7 +73,10 @@ pub struct GamePoolMiddleware {
 impl GamePoolMiddleware {
     fn new() -> GamePoolMiddleware {
         GamePoolMiddleware {
-            data: Arc::new(RwLock::new(GamePool { map: 0 })),
+            data: Arc::new(RwLock::new(GamePool {
+                games: ConcHashMap::<String, Arc<battleplanes::Game>>::new(),
+                ai_initial_boards: ConcHashMap::<String, Arc<battleplanes::Board>>::new(),
+            })),
         }
     }
 }
