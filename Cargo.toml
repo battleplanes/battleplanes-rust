@@ -19,3 +19,4 @@ iron-sessionstorage = "0.3.0"
 uuid = { version = "0.3.1", features = ["v4"] }
 concurrent-hashmap = "0.2.1"
 plugin = "0.2.6"
+urlparse = "0.7.3"
