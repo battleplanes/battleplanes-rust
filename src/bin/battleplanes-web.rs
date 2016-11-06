@@ -145,6 +145,7 @@ mod data {
     }
 }
 
+
 mod template {
     use maud;
     pub fn with_layout(inner: maud::Markup) -> maud::Markup {
@@ -166,15 +167,16 @@ mod template {
                 }
                 body {
                     (inner)
+                    script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js" { }
                     script src="/assets/js/script.js" { }
                 }
             }
         }
     }
-    pub fn battleplanes_board(board: &::battleplanes::Board) -> maud::Markup {
+    pub fn battleplanes_board(board: &::battleplanes::Board, id: &String) -> maud::Markup {
         let grid = get_normalized_grid(board);
         html! {
-            table.battleplanes-board {
+            table.battleplanes-board id=(id) {
                 thead {
                     td { " " }
                     td { "A" }
@@ -197,6 +199,40 @@ mod template {
                             @for colnum in 0..10 {
                                 td class=(grid[rownum][colnum].class) { (grid[rownum][colnum].content) }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn player_boards_as_html(left: &::battleplanes::Board, right: &::battleplanes::Board, gameplay: &::battleplanes::GamePlay) -> maud::Markup {
+        let left_markup = battleplanes_board(left, &"own_board".to_string());
+        let right_markup = battleplanes_board(right, &"own_scrapbook".to_string());
+        let left_form = match gameplay {
+            &::battleplanes::GamePlay::YouPlaceNewPlane => {
+                html! {
+                    form {
+                        input name="new_head" id="new_head" /
+                        input name="new_orientation" id="new_orientation" /
+                    }
+                }
+            },
+            _ => {
+                html! {
+                }
+            }
+        };
+        html! {
+            table {
+                tbody {
+                    tr {
+                        td id="player_board_wrapper" {
+                            (left_markup)
+                            (left_form)
+                        }
+                        td id="player_scrapbook_wrapper" {
+                            (right_markup)
                         }
                     }
                 }
@@ -269,7 +305,7 @@ fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
 
     let ai_board = gamepool.find_initial_ai_board(sessionid.clone().to_string());
 
-    let index_markup = template::battleplanes_board(&ai_board);
+    let index_markup = template::battleplanes_board(&ai_board, &"ai_board".to_string());
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
@@ -290,7 +326,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
 
-    let index_markup = template::battleplanes_board(&ai_board);
+    let index_markup = template::player_boards_as_html(&game.board_you, &game.scrapbook_you, &game.gameplay);
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
