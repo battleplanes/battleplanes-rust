@@ -327,38 +327,35 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
 
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
-
-    match req.url.query() {
-        Some(query) => {
-            let params = urlparse::parse_qs(query);
-            match game.gameplay {
-                battleplanes::GamePlay::YouPlaceNewPlane => {
+    match game.gameplay {
+        battleplanes::GamePlay::YouPlaceNewPlane => {
+            match req.url.query() {
+                Some(query) => {
+                    let params = urlparse::parse_qs(query);
                     match (params.get(&"new_head".to_string()), params.get(&"new_orientation".to_string())) {
                         (Some(maybe_new_head), Some(maybe_new_orientation)) => {
                             let new_head = maybe_new_head.get(0).unwrap().as_str();
                             let new_orientation = maybe_new_orientation.get(0).unwrap().as_str();
-                            println!("{} positioned at {} {}", sessionid.to_string(), new_head, new_orientation);
                             match game.board_you.add_new_plane_at(new_head, new_orientation) {
                                 Ok(_) => {
                                     game.next_logical_state();
                                 },
                                 Err(msg) => {
-                                    println!("{}", msg);
+                                    println!("Error in {} on {}: {}", file!(), line!(), msg);
                                 }
                             };
                         },
                         _ => {
                             //TODO: error feedback
-                            println!("error");
+                            println!("Error in {} on {}: invalid head or orientation in query: {}", file!(), line!(), query);
                         },
-                    }
+                    };
                 },
-                _ => {
-                    // TODO: more pattern matching
-                }
-            };
+                None => { },
+            }
         },
-        None => {
+        _ => {
+            // TODO: more pattern matching
         }
     }
 
