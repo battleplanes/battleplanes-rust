@@ -266,6 +266,7 @@ impl PartialEq for Coordinate {
     }
 }
 
+#[derive(Clone)]
 pub enum Orientation {
     North,
     East,
@@ -361,6 +362,7 @@ impl<'a> Iterator for TileIterator<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct Plane {
     head: Coordinate,
     orientation: Orientation,
@@ -453,6 +455,7 @@ impl Into<bool> for BombardmentResult {
     }
 }
 
+#[derive(Clone)]
 pub struct Board {
     planes: Vec<Plane>,
     killed_planes: Vec<Plane>,
@@ -586,6 +589,7 @@ impl Board {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum GamePlay {
     YouPlaceNewPlane,
     OpponentPlacesNewPlane,
@@ -620,6 +624,7 @@ impl PartialEq for GamePlay {
     }
 }
 
+#[derive(Clone)]
 pub struct Game {
     pub gameplay: GamePlay,
     pub board_you: Board,
