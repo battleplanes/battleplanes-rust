@@ -86,7 +86,7 @@ impl<'a, 'b> plugin::Plugin<Request<'a, 'b>> for GamePoolMiddleware {
 
 /*
 // TODO: helper method attached to request
-// example of clean implementation of middleware: 
+// example of clean implementation of middleware:
 // https://github.com/iron/iron-sessionstorage/blob/master/src/lib.rs
 pub trait GamePoolRequestExt {
     fn gamepool(&mut self) -> &mut GamePool;
