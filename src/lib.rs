@@ -733,6 +733,19 @@ impl Game {
         (Retry, None)
     }
 }
+//TODO: implement me
+/*
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            &North => "N",
+            &South => "S",
+            &East => "E",
+            &West => "W",
+        })
+    }
+}
+*/
 
 #[cfg(test)]
 mod test {

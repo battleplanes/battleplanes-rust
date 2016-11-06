@@ -51,17 +51,27 @@ impl iron_sessionstorage::Value for SessionId {
 
 #[derive(Clone)]
 pub struct GamePool {
-    ai_initial_boards: ConcHashMap<String, Arc<battleplanes::Board>>,
+    games: ConcHashMap<String, battleplanes::Game>,
+    ai_initial_boards: ConcHashMap<String, battleplanes::Board>,
 }
 
 impl GamePool {
-    fn find_initial_ai_board(&mut self, key: String) -> &battleplanes::Board {
+    fn find_initial_ai_board(&mut self, key: String) -> battleplanes::Board {
         match self.ai_initial_boards.find_mut(&key) {
+            Some(mut board) => board.get().clone(),
+            None => {
+                self.ai_initial_boards.insert(key.clone(), battleplanes::Board::new_random());
+                self.ai_initial_boards.find(&key).unwrap().get().clone()
+            },
+        }
+    }
+    fn find_game(&mut self, key: String) -> &mut battleplanes::Game {
+        match self.games.find_mut(&key) {
             Some(mut game) => game.get(),
             None => {
-                self.ai_initial_boards.insert(key.clone(), Arc::new(battleplanes::Board::new_random()));
-                self.ai_initial_boards.find(&key).unwrap().get()
-            },
+                self.games.insert(key.clone(), battleplanes::Game::new_random_starter());
+                self.games.find_mut(&key).unwrap().get()
+            }
         }
     }
 }
@@ -84,8 +94,8 @@ impl GamePoolMiddleware {
     fn new() -> GamePoolMiddleware {
         GamePoolMiddleware {
             data: Arc::new(RwLock::new(GamePool {
-                //map: ConcHashMap::<String, battleplanes::Game>::new(),
-                ai_initial_boards: ConcHashMap::<String, Arc<battleplanes::Board>>::new(),
+                games: ConcHashMap::<String, battleplanes::Game>::new(),
+                ai_initial_boards: ConcHashMap::<String, battleplanes::Board>::new(),
             })),
         }
     }
@@ -258,7 +268,7 @@ fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
 
     let ai_board = gamepool.find_initial_ai_board(sessionid.clone().to_string());
 
-    let index_markup = template::battleplanes_board(ai_board);
+    let index_markup = template::battleplanes_board(&ai_board);
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
@@ -270,11 +280,20 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
         Some(sessionid) => sessionid,
         None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
     };
-    let mut resp = Ok(Response::with(format!(
-                "Reload to add a char {}", sessionid.0
-    )));
+
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+    let mut resp = Response::new();
+
+    let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
+    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+
+    let index_markup = template::battleplanes_board(&ai_board);
+    let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
-    resp
+    resp.set_mut(template).set_mut(status::Ok);
+    Ok(resp)
 }
 
 fn action_hits(req: &mut Request) -> IronResult<Response> {
