@@ -259,32 +259,32 @@ mod template {
         }
         for plane in board.planes() {
             let (head_x, head_y) = plane.head().as_tuple();
-            grid[head_x][head_y].class = format!("plane-{}", plane.id());
+            grid[head_y][head_x].class = format!("plane-{}", plane.id());
 
             for tile in plane.coordinate_iterator().filter_map(|t| t) {
                 let (tile_x, tile_y) = tile.as_tuple();
-                grid[tile_x][tile_y].content = " ".to_string();
-                grid[tile_x][tile_y].class = format!("plane-{}", plane.id());
+                grid[tile_y][tile_x].content = " ".to_string();
+                grid[tile_y][tile_x].class = format!("plane-{}", plane.id());
             }
         }
         for hit in board.hits() {
             let (hit_x, hit_y) = hit.as_tuple();
-            grid[hit_x][hit_y].content = "✕".to_string();
+            grid[hit_y][hit_x].content = "✕".to_string();
         }
         for miss in board.misses() {
             let (miss_x, miss_y) = miss.as_tuple();
-            grid[miss_x][miss_y].content = "●".to_string();
+            grid[miss_y][miss_x].content = "●".to_string();
         }
         for killed in board.killed_planes() {
             let (killed_x, killed_y) = killed.head().as_tuple();
-            grid[killed_x][killed_y].content = "✕".to_string();
+            grid[killed_y][killed_x].content = "✕".to_string();
 
-            grid[killed_x][killed_y].class = format!("plane-killed-{}", killed.id());
+            grid[killed_y][killed_x].class = format!("plane-killed-{}", killed.id());
             
             for tile in killed.coordinate_iterator().filter_map(|t| t) {
                 let (tile_x, tile_y) = tile.as_tuple();
-                grid[tile_x][tile_y].content = " ".to_string();
-                grid[tile_x][tile_y].class = format!("plane-killed-{}", killed.id());
+                grid[tile_y][tile_x].content = " ".to_string();
+                grid[tile_y][tile_x].class = format!("plane-killed-{}", killed.id());
             }
         }
 
