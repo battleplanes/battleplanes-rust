@@ -49,6 +49,7 @@ impl iron_sessionstorage::Value for SessionId {
     }
 }
 
+// TODO: wrap data in the hashmap in Arc's
 #[derive(Clone)]
 pub struct GamePool {
     games: ConcHashMap<String, battleplanes::Game>,
