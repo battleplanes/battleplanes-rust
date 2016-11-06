@@ -52,16 +52,16 @@ impl iron_sessionstorage::Value for SessionId {
 #[derive(Clone)]
 pub struct GamePool {
     games: ConcHashMap<String, battleplanes::Game>,
-    ai_initial_boards: ConcHashMap<String, Arc<battleplanes::Board>>,
+    ai_initial_boards: ConcHashMap<String, battleplanes::Board>,
 }
 
 impl GamePool {
-    fn find_initial_ai_board(&mut self, key: String) -> &battleplanes::Board {
+    fn find_initial_ai_board(&mut self, key: String) -> battleplanes::Board {
         match self.ai_initial_boards.find_mut(&key) {
-            Some(mut game) => game.get(),
+            Some(mut board) => board.get().clone(),
             None => {
-                self.ai_initial_boards.insert(key.clone(), Arc::new(battleplanes::Board::new_random()));
-                self.ai_initial_boards.find(&key).unwrap().get()
+                self.ai_initial_boards.insert(key.clone(), battleplanes::Board::new_random());
+                self.ai_initial_boards.find(&key).unwrap().get().clone()
             },
         }
     }
@@ -95,7 +95,7 @@ impl GamePoolMiddleware {
         GamePoolMiddleware {
             data: Arc::new(RwLock::new(GamePool {
                 games: ConcHashMap::<String, battleplanes::Game>::new(),
-                ai_initial_boards: ConcHashMap::<String, Arc<battleplanes::Board>>::new(),
+                ai_initial_boards: ConcHashMap::<String, battleplanes::Board>::new(),
             })),
         }
     }
@@ -268,7 +268,7 @@ fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
 
     let ai_board = gamepool.find_initial_ai_board(sessionid.clone().to_string());
 
-    let index_markup = template::battleplanes_board(ai_board);
+    let index_markup = template::battleplanes_board(&ai_board);
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
@@ -289,7 +289,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
 
-    let index_markup = template::battleplanes_board(ai_board);
+    let index_markup = template::battleplanes_board(&ai_board);
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
