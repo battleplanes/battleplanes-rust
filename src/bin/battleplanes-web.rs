@@ -29,7 +29,16 @@ use iron_sessionstorage::traits::*;
 use iron_sessionstorage::SessionStorage;
 use iron_sessionstorage::backends::SignedCookieBackend;
 
+use concurrent_hashmap::ConcHashMap;
+
+#[derive(Clone)]
 struct SessionId(String);
+
+impl SessionId {
+    fn to_string(self) -> String {
+        self.0
+    }
+}
 
 impl iron_sessionstorage::Value for SessionId {
     fn get_key() -> &'static str { "sessionid" }
@@ -40,19 +49,29 @@ impl iron_sessionstorage::Value for SessionId {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct GamePool {
-    pub map: u32,
+    pub map: ConcHashMap<String, u32>,
 }
 
 impl GamePool {
-    fn increment(&mut self) {
-        self.map += 1;
+    fn increment(&mut self, key: String) {
+        //TODO: use upsert instead
+        if let Some(mut val) = self.map.find_mut(&key) {
+            *val.get() += 1;
+        } else {
+            self.map.insert(key, 0);
+        }
     }
 }
 impl fmt::Display for GamePool {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.map)
+        let mut len : usize = 0;
+        for (key, value) in self.map.iter() {
+            println!("map: {} = {}", key, value);
+            len += 1;
+        }
+        write!(f, "{}", len)
     }
 }
 
@@ -63,7 +82,9 @@ pub struct GamePoolMiddleware {
 impl GamePoolMiddleware {
     fn new() -> GamePoolMiddleware {
         GamePoolMiddleware {
-            data: Arc::new(RwLock::new(GamePool { map: 0 })),
+            data: Arc::new(RwLock::new(GamePool {
+                map: ConcHashMap::<String, u32>::new(),
+            })),
         }
     }
 }
@@ -249,11 +270,19 @@ fn action_index(r: &mut Request) -> IronResult<Response> {
 }
 
 fn action_hits(req: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(req.session().get::<SessionId>()) {
+        Some(sessionid) => sessionid,
+        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
+    };
+
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
-    gamepool.increment();
-    Ok(Response::with((status::Ok, format!("Hits: {}", gamepool.map))))
+
+    //TODO: better handling, without clone possible?
+    gamepool.increment(sessionid.clone().to_string());
+    try!(req.session().set(sessionid));
+    Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
 }
 
 fn main() {
