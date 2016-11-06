@@ -339,6 +339,20 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
                             match game.board_you.add_new_plane_at(new_head, new_orientation) {
                                 Ok(_) => {
                                     game.next_logical_state();
+                                    if game.gameplay == battleplanes::GamePlay::OpponentPlacesNewPlane {
+                                        let current_index = &game.board_opponent.planes().len();
+                                        let new_plane = &ai_board.planes()[*current_index];
+                                        let new_head = format!("{}", new_plane.head());
+                                        let new_orientation = format!("{}", new_plane.orientation());
+                                        match game.board_opponent.add_new_plane_at(new_head.as_str(), new_orientation.as_str()) {
+                                            Ok(_) => {
+                                                game.next_logical_state();
+                                            },
+                                            Err(msg) => {
+                                                println!("Error in {} on {}: {}", file!(), line!(), msg);
+                                            }
+                                        };
+                                    }
                                 },
                                 Err(msg) => {
                                     println!("Error in {} on {}: {}", file!(), line!(), msg);
