@@ -44,31 +44,32 @@ impl iron_sessionstorage::Value for SessionId {
     fn get_key() -> &'static str { "sessionid" }
     fn into_raw(self) -> String { self.0 }
     fn from_raw(value: String) -> Option<Self> {
-        // Maybe validate that only 'a's are in the string
+        // TODO: validate uuid right format
         Some(SessionId(value))
     }
 }
 
 #[derive(Clone)]
 pub struct GamePool {
-    pub map: ConcHashMap<String, u32>,
+    ai_initial_boards: ConcHashMap<String, Arc<battleplanes::Board>>,
 }
 
 impl GamePool {
-    fn increment(&mut self, key: String) {
-        //TODO: use upsert instead
-        if let Some(mut val) = self.map.find_mut(&key) {
-            *val.get() += 1;
-        } else {
-            self.map.insert(key, 0);
+    fn find_initial_ai_board(&mut self, key: String) -> &battleplanes::Board {
+        match self.ai_initial_boards.find_mut(&key) {
+            Some(mut game) => game.get(),
+            None => {
+                self.ai_initial_boards.insert(key.clone(), Arc::new(battleplanes::Board::new_random()));
+                self.ai_initial_boards.find(&key).unwrap().get()
+            },
         }
     }
 }
 impl fmt::Display for GamePool {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut len : usize = 0;
-        for (key, value) in self.map.iter() {
-            println!("map: {} = {}", key, value);
+        for (key, value) in self.ai_initial_boards.iter() {
+            //println!("map: {} = {}", key, value);
             len += 1;
         }
         write!(f, "{}", len)
@@ -83,7 +84,8 @@ impl GamePoolMiddleware {
     fn new() -> GamePoolMiddleware {
         GamePoolMiddleware {
             data: Arc::new(RwLock::new(GamePool {
-                map: ConcHashMap::<String, u32>::new(),
+                //map: ConcHashMap::<String, battleplanes::Game>::new(),
+                ai_initial_boards: ConcHashMap::<String, Arc<battleplanes::Board>>::new(),
             })),
         }
     }
@@ -92,8 +94,8 @@ impl GamePoolMiddleware {
 impl iron::typemap::Key for GamePoolMiddleware { type Value = Arc<RwLock<GamePool>>; }
 
 impl iron::BeforeMiddleware for GamePoolMiddleware {
-    fn before(&self, r: &mut Request) -> IronResult<()> {
-        r.extensions.insert::<GamePoolMiddleware>(self.data.clone());
+    fn before(&self, req: &mut Request) -> IronResult<()> {
+        req.extensions.insert::<GamePoolMiddleware>(self.data.clone());
         Ok(())
     }
 }
@@ -158,7 +160,7 @@ mod template {
             }
         }
     }
-    pub fn battleplanes_board(board: ::battleplanes::Board) -> maud::Markup {
+    pub fn battleplanes_board(board: &::battleplanes::Board) -> maud::Markup {
         let grid = get_normalized_grid(board);
         html! {
             table.battleplanes-board {
@@ -197,7 +199,7 @@ mod template {
         content: String,
     }
 
-    fn get_normalized_grid(board: ::battleplanes::Board) -> Vec<Vec<HtmlCellProperties>> {
+    fn get_normalized_grid(board: &::battleplanes::Board) -> Vec<Vec<HtmlCellProperties>> {
         let mut grid : Vec<Vec<HtmlCellProperties>> = Vec::with_capacity(10);
         for i in 0..10 {
             grid.push(Vec::new());
@@ -243,29 +245,35 @@ mod template {
     }
 }
 
-fn action_randomgrid(r: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::new();
-    let mut random_board = battleplanes::Board::new_random();
-    for _ in 0..20 {
-        let hit = battleplanes::Coordinate::new_random_coordinate();
-        random_board.hit_at(hit);
-    }
+fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(req.session().get::<SessionId>()) {
+        Some(sessionid) => sessionid,
+        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
+    };
 
-    let index_markup = template::battleplanes_board(random_board);
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+    let mut resp = Response::new();
+
+    let ai_board = gamepool.find_initial_ai_board(sessionid.clone().to_string());
+
+    let index_markup = template::battleplanes_board(ai_board);
     let template = template::with_layout(index_markup);
+    try!(req.session().set(sessionid));
     resp.set_mut(template).set_mut(status::Ok);
     Ok(resp)
 }
 
-fn action_index(r: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(r.session().get::<SessionId>()) {
+fn action_index(req: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(req.session().get::<SessionId>()) {
         Some(sessionid) => sessionid,
         None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
     };
     let mut resp = Ok(Response::with(format!(
                 "Reload to add a char {}", sessionid.0
     )));
-    try!(r.session().set(sessionid));
+    try!(req.session().set(sessionid));
     resp
 }
 
@@ -280,7 +288,6 @@ fn action_hits(req: &mut Request) -> IronResult<Response> {
     let mut gamepool = arc.write().ok().unwrap();
 
     //TODO: better handling, without clone possible?
-    gamepool.increment(sessionid.clone().to_string());
     try!(req.session().set(sessionid));
     Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
 }
