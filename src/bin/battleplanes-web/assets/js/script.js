@@ -102,6 +102,34 @@ $(document).ready(function(){
             $("#new_orientation").val(data.orientation);
         });
     } else {
-        console.log("switching mode");
+        $("#own_scrapbook tbody td").on("mouseover", function() {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_scrapbook");
+            data.tile = $(this);
+            data.grid.trigger("tileover", data);
+        });
+        $("#own_scrapbook tbody td").on("mouseout", function() {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_scrapbook");
+            data.tile = $(this);
+            data.grid.trigger("tileout", data);
+        });
+        $("#own_scrapbook tbody td").on("click", function(e) {
+            data = window.get_tile_coordinates($(this));
+            data.grid = $("#own_scrapbook");
+            data.tile = $(this);
+            data.orientation = window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length];
+            data.grid.trigger("tilehit", data);
+        });
+
+        $("#own_scrapbook").on("tileover", function(ev, data) {
+            data.tile.addClass("highlighted-temp-hit");
+        });
+        $("#own_scrapbook").on("tileout", function(ev, data) {
+            data.tile.removeClass("highlighted-temp-hit");
+        });
+        $("#own_scrapbook").on("tilehit", function(ev, data) {
+            $("#new_hit").val(data.letter + data.number);
+        });
     }
 })

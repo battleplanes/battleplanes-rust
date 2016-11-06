@@ -225,6 +225,20 @@ mod template {
                 }
             }
         };
+        let right_form = match gameplay {
+            &::battleplanes::GamePlay::YouBombard => {
+                html! {
+                    form {
+                        input name="new_hit" id="new_hit" /
+                        input type="submit" value="Bombard" /
+                    }
+                }
+            },
+            _ => {
+                html! {
+                }
+            }
+        };
         html! {
             table {
                 tbody {
@@ -235,6 +249,7 @@ mod template {
                         }
                         td id="player_scrapbook_wrapper" {
                             (right_markup)
+                            (right_form)
                         }
                     }
                 }

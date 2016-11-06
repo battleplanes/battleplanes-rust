@@ -42,3 +42,6 @@ table.battleplanes-board thead {
 .highlighted-temp-tile {
     background: #86a9e0;
 }
+.highlighted-temp-hit {
+    background: #ccc;
+}
