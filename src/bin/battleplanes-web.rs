@@ -245,13 +245,13 @@ mod template {
                     tr {
                         td colspan="2" {
                             p {
-                                "Left click on the lefthandside board to position plane."
+                                "Use left click on the left board to position plane,"
                             }
                             p {
-                                "Right click to rotate."
+                                "Right click to rotate,"
                             }
                             p {
-                                "Submit to send plane to mission."
+                                "And click submit to send plane to mission."
                             }
                         }
                     }
