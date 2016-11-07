@@ -44,21 +44,35 @@ $(document).ready(function(){
         return tiles;
     }
     window.highlight_plane_tiles = function(data, orientation) {
-        data.tile.addClass("highlighted-temp-tile");
+        var className = "highlighted-temp-tile";
+        if (data.className) {
+            className = data.className;
+        }
+        data.tile.addClass(className);
         tiles = get_plane_tiles_from_head(data.grid, data.tile, orientation);
         for(var i=0; i<tiles.length; i++) {
-            tiles[i].addClass("highlighted-temp-tile");
+            tiles[i].addClass(className);
         }
     }
     window.unhighlight_plane_tiles = function(data, orientation) {
-        data.tile.removeClass("highlighted-temp-tile");
+        var className = "highlighted-temp-tile";
+        if (data.className) {
+            className = data.className;
+        }
+        data.tile.removeClass(className);
         tiles = get_plane_tiles_from_head(data.grid, data.tile, orientation);
         for(var i=0; i<tiles.length; i++) {
-            tiles[i].removeClass("highlighted-temp-tile");
+            tiles[i].removeClass(className);
         }
     }
 
     if ($("#new_head").length == 1 && $("#new_orientation").length == 1) {
+
+        $("#new_head").data("prev", "");
+        $("#new_orientation").data("prev", "");
+        $("#new_head").val("");
+        $("#new_orientation").val("");
+
         $("#own_board tbody td").on("mouseover", function() {
             data = window.get_tile_coordinates($(this));
             data.grid = $("#own_board");
@@ -98,8 +112,41 @@ $(document).ready(function(){
             window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
         });
         $("#own_board").on("planeplaced", function(ev, data) {
-            $("#new_head").val(data.letter + data.number);
-            $("#new_orientation").val(data.orientation);
+            console.log("plane placed", data);
+            var $new_head = $("#new_head");
+            var $new_orientation = $("#new_orientation");
+            var $grid = $(this);
+
+            var prev_head = $new_head.data("prev");
+            var prev_orientation = $new_orientation.data("prev");
+            if (prev_head && prev_orientation) {
+                var letter = prev_head.substring(0, 1);
+                var number = parseInt(prev_head.substring(1));
+                var x = window.X_COORDINATES.indexOf(letter);
+                var y = number-1;
+                var prev_data = {
+                    x: x,
+                    y: y,
+                    letter: letter,
+                    number: number,
+                    orientation: prev_orientation,
+                    grid: $grid,
+                    tile: get_tile_by_coord($grid, x, y),
+                };
+                if (prev_data.tile) {
+                    prev_data.className = "highlighted-fixed-tile";
+                    window.unhighlight_plane_tiles(prev_data, prev_orientation);
+                }
+            }
+
+            $new_head.val(data.letter + data.number);
+            $new_orientation.val(data.orientation);
+
+            $new_head.data("prev", $new_head.val());
+            $new_orientation.data("prev", $new_orientation.val());
+
+            data.className = "highlighted-fixed-tile";
+            window.highlight_plane_tiles(data, data.orientation);
         });
     } else {
         $("#own_scrapbook tbody td").on("mouseover", function() {

@@ -43,7 +43,10 @@ table.battleplanes-board thead {
     background: red;
 }
 .highlighted-temp-tile {
-    background: #86a9e0;
+    background: #86a9e0 !important;
+}
+.highlighted-fixed-tile {
+    background: #14176d;
 }
 .highlighted-temp-hit {
     background: #ccc;
