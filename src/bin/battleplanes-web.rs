@@ -214,9 +214,9 @@ mod template {
             &::battleplanes::GamePlay::YouPlaceNewPlane => {
                 html! {
                     form {
-                        input name="new_head" id="new_head" /
-                        input name="new_orientation" id="new_orientation" /
-                        input type="submit" value="Position New Plane" /
+                        input name="new_head" id="new_head" type="hidden" /
+                        input name="new_orientation" id="new_orientation" type="hidden" /
+                        input type="submit" value="Send Gray Plane to Mission" id="send_to_mission" /
                     }
                 }
             },
@@ -240,6 +240,23 @@ mod template {
             }
         };
         let top_notice = match gameplay {
+            &::battleplanes::GamePlay::YouPlaceNewPlane => {
+                html! {
+                    tr {
+                        td colspan="2" {
+                            p {
+                                "Left click on the lefthandside board to position plane."
+                            }
+                            p {
+                                "Right click to rotate."
+                            }
+                            p {
+                                "Submit to send plane to mission."
+                            }
+                        }
+                    }
+                }
+            },
             &::battleplanes::GamePlay::YouWon => {
                 html! {
                     tr {
@@ -270,7 +287,9 @@ mod template {
                     tr {
                         td id="player_board_wrapper" {
                             (left_markup)
-                            (left_form)
+                            div class="centered" {
+                                (left_form)
+                            }
                         }
                         td id="player_scrapbook_wrapper" {
                             (right_markup)

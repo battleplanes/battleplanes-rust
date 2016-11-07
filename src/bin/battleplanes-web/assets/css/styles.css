@@ -46,8 +46,28 @@ table.battleplanes-board thead {
     background: #86a9e0 !important;
 }
 .highlighted-fixed-tile {
-    background: #14176d;
+    background: gray;
 }
 .highlighted-temp-hit {
     background: #ccc;
+}
+#send_to_mission {
+    display: none;
+}
+.centered {
+    text-align: center;
+    vertical-align: middle;
+}
+html, body {
+    height: 100%;
+}
+
+html {
+    display: table;
+    margin: auto;
+}
+
+body {
+    display: table-cell;
+    vertical-align: middle;
 }

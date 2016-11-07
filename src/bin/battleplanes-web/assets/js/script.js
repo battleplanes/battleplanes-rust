@@ -146,6 +146,7 @@ $(document).ready(function(){
 
             data.className = "highlighted-fixed-tile";
             window.highlight_plane_tiles(data, data.orientation);
+            $("#send_to_mission").show();
         });
     } else {
         $("#own_scrapbook tbody td").on("mouseover", function() {
