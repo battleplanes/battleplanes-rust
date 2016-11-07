@@ -76,6 +76,12 @@ impl GamePool {
             }
         }
     }
+    // TODO: remove the game once it's finished
+    // currently, the heap grows indefinitely
+    fn remove_game(&mut self, key: String) {
+        self.games.remove(&key);
+        self.ai_initial_boards.remove(&key);
+    }
 }
 impl fmt::Display for GamePool {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
