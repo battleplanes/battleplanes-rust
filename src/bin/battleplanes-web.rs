@@ -563,7 +563,6 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
         return Ok(resp);
     }
 
-    let new_sessionid = SessionId(Uuid::new_v4().hyphenated().to_string().to_owned());
     match (std::env::var("PRIZE_TITLE"), std::env::var("PRIZE_LINK")) {
         (Ok(link_title), Ok(link_dest)) => {
             let won_markup = template::single_link_page(&link_title, &link_dest);
@@ -577,7 +576,7 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    try!(req.session().set(new_sessionid));
+    try!(req.session().clear());
     Ok(resp)
 }
 
@@ -597,14 +596,12 @@ fn action_youlost(req: &mut Request) -> IronResult<Response> {
         return Ok(resp);
     }
 
-    let new_sessionid = SessionId(Uuid::new_v4().hyphenated().to_string().to_owned());
 
     let lost_markup = template::single_link_page(&"You Lost, Play Again".to_string(), &"/".to_string());
     let template = template::with_layout(lost_markup);
     resp.set_mut(template);
 
-    //TODO: better handling, without clone possible?
-    try!(req.session().set(new_sessionid));
+    try!(req.session().clear());
     Ok(resp)
 }
 

@@ -526,7 +526,6 @@ impl Board {
     }
 
     pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<&Plane, String> {
-        let mut error_message = "";
         if self.is_in_gameplay() {
             let t = "Cannot add planes mid-game".to_string();
             self.previous_error_message = Some(t.clone());
