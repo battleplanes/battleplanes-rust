@@ -575,8 +575,9 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
             resp.set_mut(template);
         },
         _ => {
-            resp.headers.set(iron::headers::Location("/".to_string()));
-            resp.set_mut(status::Found);
+            let won_markup = template::single_link_page(&"You Won, Play Again".to_string(), &"/".to_string());
+            let template = template::with_layout(won_markup);
+            resp.set_mut(template);
         }
     }
 
@@ -590,13 +591,28 @@ fn action_youlost(req: &mut Request) -> IronResult<Response> {
         None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
     };
 
+    let mut resp = Response::new();
+
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
+    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+
+    if game.gameplay != battleplanes::GamePlay::OpponentWon {
+        resp.headers.set(iron::headers::Location("/".to_string()));
+        resp.set_mut(status::Found);
+        return Ok(resp);
+    }
+
+    let new_sessionid = SessionId(Uuid::new_v4().hyphenated().to_string().to_owned());
+
+    let lost_markup = template::single_link_page(&"You Lost, Play Again".to_string(), &"/".to_string());
+    let template = template::with_layout(lost_markup);
+    resp.set_mut(template);
 
     //TODO: better handling, without clone possible?
-    try!(req.session().set(sessionid));
-    Ok(Response::with((status::Ok, format!("youlost: {}", *gamepool))))
+    try!(req.session().set(new_sessionid));
+    Ok(resp)
 }
 
 fn action_env(req: &mut Request) -> IronResult<Response> {
@@ -630,6 +646,8 @@ fn main() {
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
     let gamepool = GamePoolMiddleware::new();
     chain.link_before(gamepool);
-    println!("Server running at http://localhost:3000/");
-    Iron::new(chain).http("localhost:3000").unwrap();
+    println!("Server running at http://0.0.0.0:3000/");
+    let p = std::env::current_dir().unwrap();
+    println!("The current directory is {}", p.display());
+    Iron::new(chain).http("0.0.0.0:3000").unwrap();
 }
