@@ -391,10 +391,7 @@ mod template {
 }
 
 fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(req.session().get::<SessionId>()) {
-        Some(sessionid) => sessionid,
-        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
-    };
+    let sessionid : SessionId = get_session_id(req);
 
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
@@ -410,11 +407,23 @@ fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
     Ok(resp)
 }
 
+fn get_session_id(req: &mut Request) -> SessionId {
+    match req.session().get::<SessionId>() {
+        Ok(Some(sessionid)) => sessionid,
+        _ => {
+            let sessionid = SessionId(Uuid::new_v4().hyphenated().to_string().to_owned());
+            println!("New session {}", sessionid.to_string());
+            println!("From Addr {}", req.remote_addr);
+            for t in req.headers.iter() {
+                println!("{}", t);
+             }
+            sessionid
+        }
+    }
+}
+
 fn action_index(req: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(req.session().get::<SessionId>()) {
-        Some(sessionid) => sessionid,
-        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
-    };
+    let sessionid : SessionId = get_session_id(req);
 
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
@@ -550,10 +559,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
 }
 
 fn action_youwon(req: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(req.session().get::<SessionId>()) {
-        Some(sessionid) => sessionid,
-        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
-    };
+    let sessionid : SessionId = get_session_id(req);
     let mut resp = Response::new();
 
     let mut t = req.get::<GamePoolMiddleware>();
@@ -586,10 +592,7 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
 }
 
 fn action_youlost(req: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(req.session().get::<SessionId>()) {
-        Some(sessionid) => sessionid,
-        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
-    };
+    let sessionid : SessionId = get_session_id(req);
 
     let mut resp = Response::new();
 
