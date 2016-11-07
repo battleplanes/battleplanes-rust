@@ -407,6 +407,8 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
         battleplanes::GamePlay::YouPlaceNewPlane => {
             match req.url.query() {
                 Some(query) => {
+                    resp.headers.set(iron::headers::Location("/".to_string()));
+                    resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match (params.get(&"new_head".to_string()), params.get(&"new_orientation".to_string())) {
                         (Some(maybe_new_head), Some(maybe_new_orientation)) => {
@@ -465,6 +467,8 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
         battleplanes::GamePlay::YouBombard => {
             match req.url.query() {
                 Some(query) => {
+                    resp.headers.set(iron::headers::Location("/".to_string()));
+                    resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match params.get(&"new_hit".to_string()) {
                         Some(maybe_new_hit) => {
@@ -516,7 +520,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     let index_markup = template::player_boards_as_html(&game.board_you, &game.scrapbook_you, &game.gameplay);
     let template = template::with_layout(index_markup);
     try!(req.session().set(sessionid));
-    resp.set_mut(template).set_mut(status::Ok);
+    resp.set_mut(template);
     Ok(resp)
 }
 
