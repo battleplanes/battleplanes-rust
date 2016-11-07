@@ -228,7 +228,7 @@ mod template {
         let right_form = match gameplay {
             &::battleplanes::GamePlay::YouBombard => {
                 html! {
-                    form {
+                    form id="bombard_form" {
                         input name="new_hit" id="new_hit" /
                         input type="submit" value="Bombard" /
                     }
@@ -252,6 +252,17 @@ mod template {
                             }
                             p {
                                 "Submit to send plane to mission."
+                            }
+                        }
+                    }
+                }
+            },
+            &::battleplanes::GamePlay::YouBombard => {
+                html! {
+                    tr {
+                        td colspan="2" {
+                            p {
+                                "Left click on the righthandside board to bombard the opponent."
                             }
                         }
                     }

@@ -177,6 +177,7 @@ $(document).ready(function(){
         });
         $("#own_scrapbook").on("tilehit", function(ev, data) {
             $("#new_hit").val(data.letter + data.number);
+            $("#bombard_form").submit();
         });
     }
 })
