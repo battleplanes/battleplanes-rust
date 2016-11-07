@@ -239,9 +239,34 @@ mod template {
                 }
             }
         };
+        let top_notice = match gameplay {
+            &::battleplanes::GamePlay::YouWon => {
+                html! {
+                    tr {
+                        td colspan="2" {
+                            "You won!"
+                        }
+                    }
+                }
+            },
+            &::battleplanes::GamePlay::OpponentWon => {
+                html! {
+                    tr {
+                        td colspan="2" {
+                            "Opponent won!"
+                        }
+                    }
+                }
+            },
+            _ => {
+                html! {
+                }
+            },
+        };
         html! {
             table {
                 tbody {
+                    (top_notice)
                     tr {
                         td id="player_board_wrapper" {
                             (left_markup)
@@ -291,6 +316,11 @@ mod template {
         for miss in board.misses() {
             let (miss_x, miss_y) = miss.as_tuple();
             grid[miss_y][miss_x].content = "●".to_string();
+        }
+        for kill in board.kills() {
+            let (kill_x, kill_y) = kill.as_tuple();
+            grid[kill_y][kill_x].content = "✕".to_string();
+            grid[kill_y][kill_x].class = format!("plane-killed");
         }
         for killed in board.killed_planes() {
             let (killed_x, killed_y) = killed.head().as_tuple();
@@ -369,6 +399,10 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
                                             }
                                         };
                                     }
+                                    if game.gameplay == battleplanes::GamePlay::OpponentBombards {
+                                        game.opponent_hits_randomly();
+                                        game.next_logical_state();
+                                    }
                                 },
                                 Err(msg) => {
                                     println!("Error in {} on {}: {}", file!(), line!(), msg);
@@ -398,9 +432,55 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
                 }
             };
         },
-        _ => {
-            // TODO: more pattern matching
-        }
+        battleplanes::GamePlay::YouBombard => {
+            match req.url.query() {
+                Some(query) => {
+                    let params = urlparse::parse_qs(query);
+                    match params.get(&"new_hit".to_string()) {
+                        Some(maybe_new_hit) => {
+                            let new_hit = maybe_new_hit.get(0).unwrap().as_str();
+                            match game.you_hit_at(new_hit) {
+                                battleplanes::BombardmentResult::Hit => {
+                                    println!("You've hit at {}", new_hit);
+                                    game.next_logical_state();
+                                },
+                                battleplanes::BombardmentResult::Miss => {
+                                    println!("You've missed at {}", new_hit);
+                                    game.next_logical_state();
+                                },
+                                battleplanes::BombardmentResult::Kill => {
+                                    println!("You've killed at {}", new_hit);
+                                    game.next_logical_state();
+                                },
+                                battleplanes::BombardmentResult::Retry => {
+                                    println!("Retry");
+                                },
+                            };
+                            game.opponent_hits_randomly();
+                            game.next_logical_state();
+                        },
+                        None => {
+                        },
+                    };
+                },
+                None => {
+                },
+            };
+        },
+        battleplanes::GamePlay::OpponentBombards => {
+            game.opponent_hits_randomly();
+            game.next_logical_state();
+        },
+        battleplanes::GamePlay::YouWon => {
+            resp.status = Some(iron::status::Found);
+            resp.headers.set(iron::headers::Location("/youwon".to_string()));
+            return Ok(resp);
+        },
+        battleplanes::GamePlay::OpponentWon => {
+            resp.status = Some(iron::status::Found);
+            resp.headers.set(iron::headers::Location("/youlost".to_string()));
+            return Ok(resp);
+        },
     }
 
     let index_markup = template::player_boards_as_html(&game.board_you, &game.scrapbook_you, &game.gameplay);
@@ -425,6 +505,47 @@ fn action_hits(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
 }
 
+fn action_youwon(req: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(req.session().get::<SessionId>()) {
+        Some(sessionid) => sessionid,
+        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
+    };
+
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+
+    //TODO: better handling, without clone possible?
+    try!(req.session().set(sessionid));
+    Ok(Response::with((status::Ok, format!("youwon: {}", *gamepool))))
+}
+
+fn action_youlost(req: &mut Request) -> IronResult<Response> {
+    let sessionid = match try!(req.session().get::<SessionId>()) {
+        Some(sessionid) => sessionid,
+        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
+    };
+
+    let mut t = req.get::<GamePoolMiddleware>();
+    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let mut gamepool = arc.write().ok().unwrap();
+
+    //TODO: better handling, without clone possible?
+    try!(req.session().set(sessionid));
+    Ok(Response::with((status::Ok, format!("youlost: {}", *gamepool))))
+}
+
+fn action_env(req: &mut Request) -> IronResult<Response> {
+    let mut stringified_env = String::new();
+    for (var, val) in std::env::vars() {
+        stringified_env.push_str(var.as_str());
+        stringified_env.push_str("=");
+        stringified_env.push_str(val.as_str());
+        stringified_env.push_str("\n");
+    }
+    Ok(Response::with((status::Ok, stringified_env)))
+}
+
 fn main() {
     //TODO: load secret from env
     let my_secret = b"verysecret".to_vec();
@@ -434,6 +555,9 @@ fn main() {
     router.get("/", action_index);
     router.get("/randomgrid", action_randomgrid);
     router.get("/hits", action_hits);
+    router.get("/youwon", action_youwon);
+    router.get("/youlost", action_youlost);
+    router.get("/env", action_env);
 
     let mut assets_mount = Mount::new();
     assets_mount

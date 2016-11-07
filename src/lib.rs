@@ -671,12 +671,14 @@ impl Game {
 
     pub fn next_logical_state(&mut self) {
         use GamePlay::*;
+        println!("gameplay is {}", self.gameplay);
         if self.gameplay == YouPlaceNewPlane {
             if !self.board_opponent.is_initialized() {
                 self.gameplay = OpponentPlacesNewPlane;
             } else {
                 self.gameplay = OpponentBombards;
             }
+            println!("gameplay became {} in {} on {}", self.gameplay, file!(), line!());
             return;
         }
         if self.gameplay == OpponentPlacesNewPlane {
@@ -685,6 +687,7 @@ impl Game {
             } else {
                 self.gameplay = YouBombard;
             }
+            println!("gameplay became {} in {} on {}", self.gameplay, file!(), line!());
             return;
         }
         if self.gameplay == YouBombard {
@@ -693,6 +696,7 @@ impl Game {
             } else {
                 self.gameplay = OpponentBombards;
             }
+            println!("gameplay became {} in {} on {}", self.gameplay, file!(), line!());
             return;
         }
         if self.gameplay == OpponentBombards {
@@ -701,8 +705,10 @@ impl Game {
             } else {
                 self.gameplay = YouBombard;
             }
+            println!("gameplay became {} in {} on {}", self.gameplay, file!(), line!());
             return;
         }
+        println!("gameplay stayed {} in {} on {}", self.gameplay, file!(), line!());
     }
     pub fn you_hit_at(&mut self, target: &str) -> BombardmentResult {
         use BombardmentResult::*;
@@ -720,7 +726,8 @@ impl Game {
                         self.scrapbook_you.misses.push(coord.clone())
                     },
                     Kill => {
-                        self.scrapbook_you.kills.push(coord.clone())
+                        self.scrapbook_you.kills.push(coord.clone());
+                        self.scrapbook_you.hits.push(coord.clone())
                     },
                     Retry => {
                     },

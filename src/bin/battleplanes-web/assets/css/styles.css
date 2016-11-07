@@ -39,6 +39,9 @@ table.battleplanes-board thead {
     background: #f2d11a;
     opacity: 0.5;
 }
+.plane-killed {
+    background: red;
+}
 .highlighted-temp-tile {
     background: #86a9e0;
 }
