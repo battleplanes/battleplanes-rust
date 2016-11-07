@@ -375,6 +375,13 @@ mod template {
 
         grid
     }
+    pub fn single_link_page(title: &String, link: &String) -> maud::Markup {
+        html! {
+            a href=(link) {
+                (title)
+            }
+        }
+    }
 }
 
 fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
@@ -536,34 +543,39 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     Ok(resp)
 }
 
-fn action_hits(req: &mut Request) -> IronResult<Response> {
-    let sessionid = match try!(req.session().get::<SessionId>()) {
-        Some(sessionid) => sessionid,
-        None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
-    };
-
-    let mut t = req.get::<GamePoolMiddleware>();
-    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
-    let mut gamepool = arc.write().ok().unwrap();
-
-    //TODO: better handling, without clone possible?
-    try!(req.session().set(sessionid));
-    Ok(Response::with((status::Ok, format!("Hits: {}", *gamepool))))
-}
-
 fn action_youwon(req: &mut Request) -> IronResult<Response> {
     let sessionid = match try!(req.session().get::<SessionId>()) {
         Some(sessionid) => sessionid,
         None => SessionId(Uuid::new_v4().hyphenated().to_string().to_owned()),
     };
+    let mut resp = Response::new();
 
     let mut t = req.get::<GamePoolMiddleware>();
     let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
+    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
 
-    //TODO: better handling, without clone possible?
-    try!(req.session().set(sessionid));
-    Ok(Response::with((status::Ok, format!("youwon: {}", *gamepool))))
+    if game.gameplay != battleplanes::GamePlay::YouWon {
+        resp.headers.set(iron::headers::Location("/".to_string()));
+        resp.set_mut(status::Found);
+        return Ok(resp);
+    }
+
+    let new_sessionid = SessionId(Uuid::new_v4().hyphenated().to_string().to_owned());
+    match (std::env::var("PRIZE_TITLE"), std::env::var("PRIZE_LINK")) {
+        (Ok(link_title), Ok(link_dest)) => {
+            let won_markup = template::single_link_page(&link_title, &link_dest);
+            let template = template::with_layout(won_markup);
+            resp.set_mut(template);
+        },
+        _ => {
+            resp.headers.set(iron::headers::Location("/".to_string()));
+            resp.set_mut(status::Found);
+        }
+    }
+
+    try!(req.session().set(new_sessionid));
+    Ok(resp)
 }
 
 fn action_youlost(req: &mut Request) -> IronResult<Response> {
@@ -600,7 +612,6 @@ fn main() {
     let mut router = Router::new();
     router.get("/", action_index);
     router.get("/randomgrid", action_randomgrid);
-    router.get("/hits", action_hits);
     router.get("/youwon", action_youwon);
     router.get("/youlost", action_youlost);
     router.get("/env", action_env);
