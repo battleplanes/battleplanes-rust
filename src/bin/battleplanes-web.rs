@@ -87,10 +87,16 @@ impl fmt::Display for GamePool {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut len : usize = 0;
         for (key, value) in self.ai_initial_boards.iter() {
-            //println!("map: {} = {}", key, value);
+            match write!(f, "{}={}\n",key, value) {
+                Ok(_) => { },
+                Err(_) => {
+                    //TODO: abort instead
+                    //return err;
+                },
+            };
             len += 1;
         }
-        write!(f, "{}", len)
+        write!(f, "total games stored: {}", len)
     }
 }
 
@@ -140,18 +146,6 @@ impl<'a, 'b> GamePoolRequestExt for Request<'a, 'b> {
     }
 }
 */
-
-mod data {
-    use std::collections::BTreeMap;
-
-    pub fn make_data() -> BTreeMap<String, String> {
-        let mut data = BTreeMap::new();
-        data.insert("message".to_string(), "Hello, World!".to_string());
-
-        data
-    }
-}
-
 
 mod template {
     use maud;
@@ -393,8 +387,8 @@ mod template {
 fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
     let sessionid : SessionId = get_session_id(req);
 
-    let mut t = req.get::<GamePoolMiddleware>();
-    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let t = req.get::<GamePoolMiddleware>();
+    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
     let mut resp = Response::new();
 
@@ -425,12 +419,10 @@ fn get_session_id(req: &mut Request) -> SessionId {
 fn action_index(req: &mut Request) -> IronResult<Response> {
     let sessionid : SessionId = get_session_id(req);
 
-    let mut t = req.get::<GamePoolMiddleware>();
-    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let t = req.get::<GamePoolMiddleware>();
+    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
     let mut resp = Response::new();
-
-    let mut will_redirect = false;
 
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     println!("{}", ai_board);
@@ -440,7 +432,6 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
             match req.url.query() {
                 Some(query) => {
                     resp.headers.set(iron::headers::Location("/".to_string()));
-                    will_redirect = true;
                     resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match (params.get(&"new_head".to_string()), params.get(&"new_orientation".to_string())) {
@@ -501,7 +492,6 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
             match req.url.query() {
                 Some(query) => {
                     resp.headers.set(iron::headers::Location("/".to_string()));
-                    will_redirect = true;
                     resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match params.get(&"new_hit".to_string()) {
@@ -562,10 +552,10 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
     let sessionid : SessionId = get_session_id(req);
     let mut resp = Response::new();
 
-    let mut t = req.get::<GamePoolMiddleware>();
-    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let t = req.get::<GamePoolMiddleware>();
+    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
-    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+    let game = { gamepool.find_game(sessionid.clone().to_string()) };
 
     if game.gameplay != battleplanes::GamePlay::YouWon {
         resp.headers.set(iron::headers::Location("/".to_string()));
@@ -596,10 +586,10 @@ fn action_youlost(req: &mut Request) -> IronResult<Response> {
 
     let mut resp = Response::new();
 
-    let mut t = req.get::<GamePoolMiddleware>();
-    let mut arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let t = req.get::<GamePoolMiddleware>();
+    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
-    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+    let game = { gamepool.find_game(sessionid.clone().to_string()) };
 
     if game.gameplay != battleplanes::GamePlay::OpponentWon {
         resp.headers.set(iron::headers::Location("/".to_string()));
@@ -626,6 +616,10 @@ fn action_env(req: &mut Request) -> IronResult<Response> {
         stringified_env.push_str(val.as_str());
         stringified_env.push_str("\n");
     }
+    let t = req.get::<GamePoolMiddleware>();
+    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
+    let gamepool = arc.write().ok().unwrap();
+    stringified_env.push_str(format!("\n\n{}\n\n", *gamepool).as_str());
     Ok(Response::with((status::Ok, stringified_env)))
 }
 
