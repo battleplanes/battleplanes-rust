@@ -112,7 +112,6 @@ $(document).ready(function(){
             window.highlight_plane_tiles(data, window.ORIENTATIONS[window.current_orientation % window.ORIENTATIONS.length ]);
         });
         $("#own_board").on("planeplaced", function(ev, data) {
-            console.log("plane placed", data);
             var $new_head = $("#new_head");
             var $new_orientation = $("#new_orientation");
             var $grid = $(this);
