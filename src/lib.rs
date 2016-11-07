@@ -463,6 +463,7 @@ pub struct Board {
     misses: Vec<Coordinate>,
     kills: Vec<Coordinate>,
     empty_indices: BTreeSet<usize>,
+    previous_error_message: Option<String>,
 }
 
 impl Board {
@@ -478,6 +479,13 @@ impl Board {
             misses: Vec::new(),
             kills: Vec::new(),
             empty_indices: empty_indices,
+            previous_error_message: None,
+        }
+    }
+    pub fn get_previous_hit_message(&self) -> String {
+        match self.previous_error_message {
+            Some(ref msg) => msg.clone(),
+            None => "".to_string(),
         }
     }
     pub fn new_random() -> Board {
@@ -518,20 +526,33 @@ impl Board {
     }
 
     pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<&Plane, String> {
+        let mut error_message = "";
         if self.is_in_gameplay() {
-            return Err("Cannot add planes mid-game".to_string());
+            let t = "Cannot add planes mid-game".to_string();
+            self.previous_error_message = Some(t.clone());
+            return Err(t);
         }
         let t_plane = Plane::new_with_id(head, orientation, self.planes.len()+1);
         match t_plane {
-            None => Err(format!("plane cannot spawn at {} in direction {}", head, orientation)),
+            None => {
+                let t = format!("plane cannot spawn at {} in direction {}", head, orientation);
+                self.previous_error_message = Some(t.clone());
+                Err(t)
+            },
             Some(plane) => {
                 match plane.is_outside_of_map() {
-                    true => Err("Plane falls off the map".to_string()),
+                    true => {
+                        let t = "Plane falls off the map".to_string();
+                        self.previous_error_message = Some(t.clone());
+                        Err(t)
+                    },
                     false => {
                         // TODO: return list of overlapping other planes in error message
                         for other in &self.planes {
                             if plane.is_overlapping_with(&other) {
-                                return Err(format!("Plane would overlap with another one: {}", other.id));
+                                let t = format!("Plane would overlap with another one: {}", other.id);
+                                self.previous_error_message = Some(t.clone());
+                                return Err(t);
                             }
                         }
                         let head_offset = plane.head.as_usize();
@@ -540,6 +561,7 @@ impl Board {
                             self.empty_indices.remove(&tile);
                         }
                         self.planes.push(plane);
+                        self.previous_error_message = None;
                         Ok(self.planes.last().unwrap())
                     },
                 }

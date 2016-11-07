@@ -207,7 +207,10 @@ mod template {
         }
     }
 
-    pub fn player_boards_as_html(left: &::battleplanes::Board, right: &::battleplanes::Board, gameplay: &::battleplanes::GamePlay) -> maud::Markup {
+    pub fn player_boards_as_html(left: &::battleplanes::Board,
+                                 right: &::battleplanes::Board,
+                                 gameplay: &::battleplanes::GamePlay,
+    ) -> maud::Markup {
         let left_markup = battleplanes_board(left, &"own_board".to_string());
         let right_markup = battleplanes_board(right, &"own_scrapbook".to_string());
         let left_form = match gameplay {
@@ -307,6 +310,11 @@ mod template {
                             (right_form)
                         }
                     }
+                    tr {
+                        td.centered {
+                            (left.get_previous_hit_message())
+                        }
+                    }
                 }
             }
         }
@@ -400,6 +408,8 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     let mut gamepool = arc.write().ok().unwrap();
     let mut resp = Response::new();
 
+    let mut will_redirect = false;
+
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     println!("{}", ai_board);
     let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
@@ -408,6 +418,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
             match req.url.query() {
                 Some(query) => {
                     resp.headers.set(iron::headers::Location("/".to_string()));
+                    will_redirect = true;
                     resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match (params.get(&"new_head".to_string()), params.get(&"new_orientation".to_string())) {
@@ -468,6 +479,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
             match req.url.query() {
                 Some(query) => {
                     resp.headers.set(iron::headers::Location("/".to_string()));
+                    will_redirect = true;
                     resp.set_mut(status::Found);
                     let params = urlparse::parse_qs(query);
                     match params.get(&"new_hit".to_string()) {
