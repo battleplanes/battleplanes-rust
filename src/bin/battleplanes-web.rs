@@ -341,6 +341,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
     let mut resp = Response::new();
 
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
+    println!("{}", ai_board);
     let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
     match game.gameplay {
         battleplanes::GamePlay::YouPlaceNewPlane => {

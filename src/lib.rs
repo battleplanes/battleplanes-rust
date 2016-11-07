@@ -588,6 +588,17 @@ impl Board {
     }
 }
 
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = String::new();
+        for plane in self.planes() {
+            s.push_str(format!("{}{} ", plane.head(), plane.orientation()).as_str());
+        }
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug)]
 #[derive(Clone)]
 pub enum GamePlay {
@@ -621,6 +632,20 @@ impl PartialEq for GamePlay {
             (&OpponentWon, &OpponentWon) => true,
             _ => false,
         }
+    }
+}
+
+impl fmt::Display for GamePlay {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use GamePlay::*;
+        write!(f, "{}", match self {
+            &YouPlaceNewPlane => "YouPlaceNewPlane",
+            &OpponentPlacesNewPlane => "OpponentPlacesNewPlane",
+            &YouBombard => "YouBombard",
+            &OpponentBombards => "OpponentBombards",
+            &YouWon => "YouWon",
+            &OpponentWon => "OpponentWon",
+        })
     }
 }
 
