@@ -384,23 +384,6 @@ mod template {
     }
 }
 
-fn action_randomgrid(req: &mut Request) -> IronResult<Response> {
-    let sessionid : SessionId = get_session_id(req);
-
-    let t = req.get::<GamePoolMiddleware>();
-    let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
-    let mut gamepool = arc.write().ok().unwrap();
-    let mut resp = Response::new();
-
-    let ai_board = gamepool.find_initial_ai_board(sessionid.clone().to_string());
-
-    let index_markup = template::battleplanes_board(&ai_board, &"ai_board".to_string());
-    let template = template::with_layout(index_markup);
-    try!(req.session().set(sessionid));
-    resp.set_mut(template).set_mut(status::Ok);
-    Ok(resp)
-}
-
 fn get_session_id(req: &mut Request) -> SessionId {
     match req.session().get::<SessionId>() {
         Ok(Some(sessionid)) => sessionid,
@@ -627,7 +610,6 @@ fn main() {
 
     let mut router = Router::new();
     router.get("/", action_index);
-    router.get("/randomgrid", action_randomgrid);
     router.get("/youwon", action_youwon);
     router.get("/youlost", action_youlost);
     router.get("/env", action_env);
@@ -640,8 +622,8 @@ fn main() {
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
     let gamepool = GamePoolMiddleware::new();
     chain.link_before(gamepool);
-    println!("Server running at http://0.0.0.0:3000/");
+    println!("Server running at http://0.0.0.0:65432/");
     let p = std::env::current_dir().unwrap();
     println!("The current directory is {}", p.display());
-    Iron::new(chain).http("0.0.0.0:3000").unwrap();
+    Iron::new(chain).http("0.0.0.0:65432").unwrap();
 }
