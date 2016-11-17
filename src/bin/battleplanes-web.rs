@@ -19,9 +19,6 @@ extern crate battleplanes;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::fmt;
-use std::fs;
-use std::error::Error;
-use std::io::Read;
 
 use iron::prelude::*;
 use iron::status;
@@ -608,8 +605,8 @@ fn action_env(req: &mut Request) -> IronResult<Response> {
 }
 
 fn action_favicon(req: &mut Request) -> IronResult<Response> {
-    let path = "src/bin/battleplanes-web/assets/favicon.ico";
-    let resolved_path = std::path::Path::new(path);
+    let path = format!("{}/favicon.ico", ASSETS_PATH);
+    let resolved_path = std::path::Path::new(path.as_str());
     let resp = Response::new();
     iron_send_file::send_file(&req, resp, resolved_path)
 }
@@ -630,6 +627,12 @@ fn get_env() -> (String, String, String) {
     (bind_address, bind_port, session_secret)
 }
 
+#[cfg(debug_assertions)]
+const ASSETS_PATH: &'static str = "src/bin/battleplanes-web/assets";
+#[cfg(not(debug_assertions))]
+const ASSETS_PATH: &'static str = "assets";
+
+
 fn main() {
     let (bind_address, bind_port, my_secret) = get_env();
     env_logger::init().unwrap();
@@ -644,13 +647,13 @@ fn main() {
     let mut assets_mount = Mount::new();
     assets_mount
         .mount("/", router)
-        .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
+        .mount("/assets/", Static::new(Path::new(ASSETS_PATH)));
     let mut chain = Chain::new(assets_mount);
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret.into_bytes())));
     let gamepool = GamePoolMiddleware::new();
     chain.link_before(gamepool);
     let p = std::env::current_dir().unwrap();
-    println!("The current directory is {}", p.display());
+    println!("The current directory is {}, serving static assets from {}", p.display(), ASSETS_PATH);
 
     let endpoint = format!("{}:{}", bind_address, bind_port);
     println!("Server running at http://{}/", endpoint);
