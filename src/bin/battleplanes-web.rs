@@ -611,9 +611,24 @@ fn action_favicon(req: &mut Request) -> IronResult<Response> {
     iron_send_file::send_file(&req, resp, resolved_path)
 }
 
+fn get_env() -> (String, String, String) {
+    let bind_address = match std::env::var("BIND_ADDRESS") {
+        Ok(val) => val,
+        Err(_) => "0.0.0.0".to_string(),
+    };
+    let bind_port = match std::env::var("BIND_PORT") {
+        Ok(val) => val,
+        Err(_) => "65432".to_string(),
+    };
+    let session_secret = match std::env::var("SESSION_SECRET") {
+        Ok(val) => val,
+        Err(_) => "".to_string(),
+    };
+    (bind_address, bind_port, session_secret)
+}
+
 fn main() {
-    //TODO: load secret from env
-    let my_secret = b"verysecret".to_vec();
+    let (bind_address, bind_port, my_secret) = get_env();
     env_logger::init().unwrap();
 
     let mut router = Router::new();
@@ -628,11 +643,13 @@ fn main() {
         .mount("/", router)
         .mount("/assets/", Static::new(Path::new("./src/bin/battleplanes-web/assets/")));
     let mut chain = Chain::new(assets_mount);
-    chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret)));
+    chain.link_around(SessionStorage::new(SignedCookieBackend::new(my_secret.into_bytes())));
     let gamepool = GamePoolMiddleware::new();
     chain.link_before(gamepool);
-    println!("Server running at http://0.0.0.0:65432/");
     let p = std::env::current_dir().unwrap();
     println!("The current directory is {}", p.display());
-    Iron::new(chain).http("0.0.0.0:65432").unwrap();
+
+    let endpoint = format!("{}:{}", bind_address, bind_port);
+    println!("Server running at http://{}/", endpoint);
+    Iron::new(chain).http(endpoint.as_str()).unwrap();
 }
