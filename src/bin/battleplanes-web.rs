@@ -12,6 +12,7 @@ extern crate uuid;
 extern crate concurrent_hashmap;
 extern crate plugin;
 extern crate urlparse;
+extern crate iron_send_file;
 
 extern crate battleplanes;
 
@@ -603,6 +604,13 @@ fn action_env(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, stringified_env)))
 }
 
+fn action_favicon(req: &mut Request) -> IronResult<Response> {
+    let path = "src/bin/battleplanes-web/assets/favicon.ico";
+    let resolved_path = std::path::Path::new(path);
+    let resp = Response::new();
+    iron_send_file::send_file(&req, resp, resolved_path)
+}
+
 fn main() {
     //TODO: load secret from env
     let my_secret = b"verysecret".to_vec();
@@ -613,6 +621,7 @@ fn main() {
     router.get("/youwon", action_youwon);
     router.get("/youlost", action_youlost);
     router.get("/env", action_env);
+    router.get("/favicon.ico", action_favicon);
 
     let mut assets_mount = Mount::new();
     assets_mount
