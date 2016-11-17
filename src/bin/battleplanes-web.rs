@@ -638,11 +638,11 @@ fn main() {
     env_logger::init().unwrap();
 
     let mut router = Router::new();
-    router.get("/", action_index);
-    router.get("/youwon", action_youwon);
-    router.get("/youlost", action_youlost);
-    router.get("/env", action_env);
-    router.get("/favicon.ico", action_favicon);
+    router.get("/", action_index, "index");
+    router.get("/youwon", action_youwon, "youwon");
+    router.get("/youlost", action_youlost, "youlost");
+    router.get("/env", action_env, "env");
+    router.get("/favicon.ico", action_favicon, "favicon");
 
     let mut assets_mount = Mount::new();
     assets_mount

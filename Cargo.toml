@@ -4,20 +4,20 @@ version = "0.1.0"
 authors = ["Flavius Aspra <flavius.as@gmail.com>"]
 
 [dependencies]
-rand = "0.3.14"
-iron = "0.4.0"
-env_logger = "^0.3.2"
-log = "^0.3"
-walkdir = "^0.1"
-notify = { version = "^2.5", optional = true }
-router = "^0.2.0"
-mount = "0.2.1"
+rand = "*"
+iron = "*"
+env_logger = "*"
+log = "*"
+walkdir = "*"
+notify = { version = "*", optional = true }
+router = "*"
+mount = "*"
 staticfile = "*"
-maud = { version = "0.13.0", features = ["iron"] }
-maud_macros = "0.13.0"
-iron-sessionstorage = "0.3.0"
-uuid = { version = "0.3.1", features = ["v4"] }
-concurrent-hashmap = "0.2.1"
-plugin = "0.2.6"
-urlparse = "0.7.3"
+maud = { version = "*", features = ["iron"] }
+maud_macros = "*"
+iron-sessionstorage = "*"
+uuid = { version = "*", features = ["v4"] }
+concurrent-hashmap = "*"
+plugin = "*"
+urlparse = "*"
 iron-send-file = "*"
