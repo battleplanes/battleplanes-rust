@@ -19,6 +19,9 @@ extern crate battleplanes;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::fmt;
+use std::fs;
+use std::error::Error;
+use std::io::Read;
 
 use iron::prelude::*;
 use iron::status;
