@@ -1,4 +1,9 @@
-$(document).ready(function(){
+$(document).ready(function() {
+    if(is_touch_device()) {
+        alert("You are playing the game on the backend server. This is a basic interface not meant to be played on touch devices.\n" +
+        "This is intended behavior. Various frontends properly designed are planned");
+        alert("Left click is short touch. Right click is long touch");
+    }
     window.X_COORDINATES = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
     window.ORIENTATIONS = ["N", "E", "S", "W"];
     window.current_orientation = 0;
@@ -66,6 +71,7 @@ $(document).ready(function(){
         }
     }
 
+    // game initialization
     if ($("#new_head").length == 1 && $("#new_orientation").length == 1) {
 
         $("#new_head").data("prev", "");
@@ -148,7 +154,7 @@ $(document).ready(function(){
             window.highlight_plane_tiles(data, data.orientation);
             $("#send_to_mission").show();
         });
-    } else {
+    } else { // scrapbook interaction
         $("#own_scrapbook tbody td").on("mouseover", function() {
             data = window.get_tile_coordinates($(this));
             data.grid = $("#own_scrapbook");
@@ -181,3 +187,6 @@ $(document).ready(function(){
         });
     }
 })
+function is_touch_device() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints;
+};
