@@ -601,6 +601,9 @@ fn action_env(req: &mut Request) -> IronResult<Response> {
     let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let gamepool = arc.write().ok().unwrap();
     stringified_env.push_str(format!("\n\n{}\n\n", *gamepool).as_str());
+    for t in req.headers.iter() {
+        println!("{}", t);
+    }
     Ok(Response::with((status::Ok, stringified_env)))
 }
 
@@ -657,5 +660,8 @@ fn main() {
 
     let endpoint = format!("{}:{}", bind_address, bind_port);
     println!("Server running at http://{}/", endpoint);
+    for (var, val) in std::env::vars() {
+        println!("{}={}", var, val);
+    }
     Iron::new(chain).http(endpoint.as_str()).unwrap();
 }
