@@ -541,7 +541,7 @@ impl Board {
             Some(plane) => {
                 match plane.is_outside_of_map() {
                     true => {
-                        let t = "Plane falls off the map".to_string();
+                        let t = "Plane would fall off the map, try again.".to_string();
                         self.previous_error_message = Some(t.clone());
                         Err(t)
                     },
@@ -549,7 +549,7 @@ impl Board {
                         // TODO: return list of overlapping other planes in error message
                         for other in &self.planes {
                             if plane.is_overlapping_with(&other) {
-                                let t = format!("Plane would overlap with another one: {}", other.id);
+                                let t = format!("Plane would overlap with another one: {}, try again.", other.id);
                                 self.previous_error_message = Some(t.clone());
                                 return Err(t);
                             }

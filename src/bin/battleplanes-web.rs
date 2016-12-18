@@ -257,6 +257,9 @@ mod template {
                             p {
                                 "And click submit to send plane to mission."
                             }
+                            p {
+                                "You have " (3-left.planes().len()) " left to send to mission."
+                            }
                         }
                     }
                 }
