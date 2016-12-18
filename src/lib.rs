@@ -525,7 +525,7 @@ impl Board {
         temp_board
     }
 
-    pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<&Plane, String> {
+    pub fn add_new_plane_at(&mut self, head: &str, orientation: &str) -> Result<usize, String> {
         if self.is_in_gameplay() {
             let t = "Cannot add planes mid-game".to_string();
             self.previous_error_message = Some(t.clone());
@@ -561,7 +561,7 @@ impl Board {
                         }
                         self.planes.push(plane);
                         self.previous_error_message = None;
-                        Ok(self.planes.last().unwrap())
+                        Ok(self.planes.last().unwrap().id())
                     },
                 }
             }
@@ -606,6 +606,33 @@ impl Board {
     }
     pub fn clear_planes(&mut self) {
         self.planes = Vec::new();
+    }
+    pub fn find_plane_at(&self, at: &Coordinate) -> Option<&Plane> {
+        for plane in &self.planes {
+            if plane.has_tile(at) {
+                return Some(plane);
+            }
+            if plane.head() == at {
+                return Some(plane);
+            }
+        }
+        for plane in &self.killed_planes {
+            if plane.has_tile(at) {
+                return Some(plane);
+            }
+            if plane.head() == at {
+                return Some(plane);
+            }
+        }
+        None
+    }
+    pub fn get_plane_by_id(&self, id: usize) -> Option<&Plane> {
+        for plane in &self.planes {
+            if plane.id() == id {
+                return Some(&plane);
+            }
+        }
+        None
     }
 }
 
@@ -677,16 +704,18 @@ pub struct Game {
     pub board_opponent: Board,
     pub scrapbook_you: Board,
     pub scrapbook_opponent: Board,
+    pub reveal_killed: bool,
 }
 
 impl Game {
-    pub fn new_random_starter() -> Game {
+    pub fn new_random_starter(reveal_killed: bool) -> Game {
         Game {
             gameplay: GamePlay::new_random_state(),
             board_you: Board::new(),
             board_opponent: Board::new(),
             scrapbook_you: Board::new(),
             scrapbook_opponent: Board::new(),
+            reveal_killed: reveal_killed,
         }
     }
 
@@ -747,6 +776,13 @@ impl Game {
                         self.scrapbook_you.misses.push(coord.clone())
                     },
                     Kill => {
+                        let maybe_plane = self.board_opponent.find_plane_at(&coord);
+                        if let Some(plane) = maybe_plane {
+                            println!("revealing plane {} on your scrapbook", plane.id());
+                            self.scrapbook_you.killed_planes.push(plane.clone());
+                        } else {
+                            println!("not revealing plane killed at {}", coord);
+                        }
                         self.scrapbook_you.kills.push(coord.clone());
                         self.scrapbook_you.hits.push(coord.clone())
                     },
@@ -1123,6 +1159,31 @@ mod test {
             let p1 = Plane::new((plane_positions_pair.0).0, (plane_positions_pair.0).1).unwrap();
             let p2 = Plane::new((plane_positions_pair.1).0, (plane_positions_pair.1).1).unwrap();
             assert_eq!(false, p1.is_overlapping_with(&p2));
+        }
+    }
+    #[test]
+    fn find_plane_at() {
+        let mut board = Board::new();
+        if let Ok(new_id) = board.add_new_plane_at("E5", "N") {
+            let plane = board.get_plane_by_id(new_id).unwrap();
+
+            let inside_coordinates = vec![
+                "E5",
+                "C6", "D6", "E6", "F6", "G6",
+                "E7",
+                "D8", "E8", "F8",
+            ];
+            for raw_coord in inside_coordinates {
+                let coord = Coordinate::new(raw_coord).unwrap();
+                match board.find_plane_at(&coord) {
+                    Some(found_plane) => {
+                        assert_eq!(plane.id(), found_plane.id());
+                    },
+                    None => {
+                        panic!("fail for {}", raw_coord);
+                    },
+                }
+            }
         }
     }
 }

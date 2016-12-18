@@ -68,11 +68,11 @@ impl GamePool {
             },
         }
     }
-    fn find_game(&mut self, key: String) -> &mut battleplanes::Game {
+    fn find_game(&mut self, key: String, reveal_killed: bool) -> &mut battleplanes::Game {
         match self.games.find_mut(&key) {
             Some(mut game) => game.get(),
             None => {
-                self.games.insert(key.clone(), battleplanes::Game::new_random_starter());
+                self.games.insert(key.clone(), battleplanes::Game::new_random_starter(reveal_killed));
                 self.games.find_mut(&key).unwrap().get()
             }
         }
@@ -410,7 +410,7 @@ fn action_index(req: &mut Request) -> IronResult<Response> {
 
     let ai_board = { gamepool.find_initial_ai_board(sessionid.clone().to_string()) };
     println!("{}", ai_board);
-    let mut game = { gamepool.find_game(sessionid.clone().to_string()) };
+    let mut game = { gamepool.find_game(sessionid.clone().to_string(), true) };
     match game.gameplay {
         battleplanes::GamePlay::YouPlaceNewPlane => {
             match req.url.query() {
@@ -539,7 +539,7 @@ fn action_youwon(req: &mut Request) -> IronResult<Response> {
     let t = req.get::<GamePoolMiddleware>();
     let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
-    let game = { gamepool.find_game(sessionid.clone().to_string()) };
+    let game = { gamepool.find_game(sessionid.clone().to_string(), true) };
 
     if game.gameplay != battleplanes::GamePlay::YouWon {
         resp.headers.set(iron::headers::Location("/".to_string()));
@@ -572,7 +572,7 @@ fn action_youlost(req: &mut Request) -> IronResult<Response> {
     let t = req.get::<GamePoolMiddleware>();
     let arc : Arc<RwLock<GamePool>> = t.ok().unwrap();
     let mut gamepool = arc.write().ok().unwrap();
-    let game = { gamepool.find_game(sessionid.clone().to_string()) };
+    let game = { gamepool.find_game(sessionid.clone().to_string(), false) };
 
     if game.gameplay != battleplanes::GamePlay::OpponentWon {
         resp.headers.set(iron::headers::Location("/".to_string()));
