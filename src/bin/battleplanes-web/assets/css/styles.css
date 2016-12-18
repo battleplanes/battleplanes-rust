@@ -51,7 +51,10 @@ table.battleplanes-board thead {
 .highlighted-temp-hit {
     background: #ccc;
 }
-#send_to_mission, #bombard_form {
+#send_to_mission {
+    visibility: hidden;
+}
+#bombard_form {
     display: none;
 }
 .centered {
