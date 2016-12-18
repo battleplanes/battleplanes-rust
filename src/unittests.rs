@@ -45,11 +45,6 @@ fn move_coordnum() {
     assert_eq!(Some(CoordNum::Nine), ten.new_moved_by(-1));
 }
 #[test]
-fn read_coordinate() {
-    assert_eq!(Coordinate(CoordLetter::A, CoordNum::Five), Coordinate::new("A5").unwrap());
-    assert_eq!(Coordinate(CoordLetter::B, CoordNum::Seven), Coordinate::new("B7").unwrap());
-}
-#[test]
 fn convert_coordinate_to_str() {
     assert_eq!("A5", format!("{}", Coordinate::new("A5").unwrap()));
 }
@@ -57,11 +52,6 @@ fn convert_coordinate_to_str() {
 fn coordinate_equality() {
     assert_eq!(Coordinate::new("A5"), Coordinate::new("A5"));
     assert!(Coordinate::new("A5") != Coordinate::new("A6"));
-}
-#[test]
-fn move_coordinate_within_reach_of_plane() {
-    assert_eq!(Coordinate(CoordLetter::F, CoordNum::Six), Coordinate::new("E5").unwrap().new_moved_by(1, 1).unwrap());
-    assert_eq!(Coordinate(CoordLetter::D, CoordNum::Four), Coordinate::new("E5").unwrap().new_moved_by(-1, -1).unwrap());
 }
 #[test]
 fn iterate_tiles_all_visible_north() {
