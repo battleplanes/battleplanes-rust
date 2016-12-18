@@ -13,8 +13,8 @@ notify = { version = "*", optional = true }
 router = "*"
 mount = "*"
 staticfile = "*"
-maud = { version = "*", features = ["iron"] }
-maud_macros = "*"
+maud = { version = "0.14.0", features = ["iron"] }
+maud_macros = "0.14.0"
 iron-sessionstorage = "*"
 uuid = { version = "*", features = ["v4"] }
 concurrent-hashmap = "*"
