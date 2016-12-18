@@ -394,7 +394,7 @@ fn get_session_id(req: &mut Request) -> SessionId {
             println!("From Addr {}", req.remote_addr);
             for t in req.headers.iter() {
                 println!("{}", t);
-             }
+            }
             sessionid
         }
     }
