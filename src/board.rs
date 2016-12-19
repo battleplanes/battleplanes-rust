@@ -1,8 +1,7 @@
-extern crate rand;
-
 use std::fmt;
 use std::collections::BTreeSet;
 
+use rand;
 use rand::Rng;
 
 use plane::Plane;
