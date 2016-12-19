@@ -189,9 +189,15 @@ impl Game {
             return (Retry, None)
         }
         let wanted : usize = rand::thread_rng().gen::<usize>() % scrapbook_opponent.empty_indices().len();
-        let ref mut indices = scrapbook_opponent.empty_indices_mut();
-        let tile_num = *indices.iter().nth(wanted).unwrap();
-        if indices.remove(&tile_num) {
+ 
+        let (tile_num, flag) = {
+            let ref mut indices = scrapbook_opponent.empty_indices_mut();
+            let tile_num = *indices.iter().nth(wanted).unwrap();
+            let flag = indices.remove(&tile_num);
+            (tile_num, flag)
+        };
+
+        if flag {
             let tile = Coordinate::new_from_usize(tile_num);
             let result = self.board_you.hit_at(tile);
             match result {
