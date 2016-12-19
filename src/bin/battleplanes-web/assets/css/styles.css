@@ -25,7 +25,7 @@ table.battleplanes-board thead {
     background: blue;
 }
 .plane-3 {
-    background: green;
+    background: #f2d11a;
 }
 .plane-killed-1 {
     background: red;
@@ -36,6 +36,41 @@ table.battleplanes-board thead {
     opacity: 0.5;
 }
 .plane-killed-3 {
-    background: green;
+    background: #f2d11a;
     opacity: 0.5;
+}
+.plane-killed {
+    background: red;
+}
+.highlighted-temp-tile {
+    background: #86a9e0 !important;
+}
+.highlighted-fixed-tile {
+    background: gray;
+}
+.highlighted-temp-hit {
+    background: #ccc;
+}
+#send_to_mission {
+    visibility: hidden;
+}
+#bombard_form {
+    display: none;
+}
+.centered {
+    text-align: center;
+    vertical-align: middle;
+}
+html, body {
+    height: 100%;
+}
+
+html {
+    display: table;
+    margin: auto;
+}
+
+body {
+    display: table-cell;
+    vertical-align: middle;
 }

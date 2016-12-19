@@ -5,7 +5,7 @@ use std::fmt;
 use std::io::Write;
 
 fn main() {
-    let mut game = battleplanes::Game::new_random_starter();
+    let mut game = battleplanes::Game::new_random_starter(false);
     let ai_board = battleplanes::Board::new_random();
     println!("AI boards");
     println!("{}", player_boards_as_string(&ai_board, &game.scrapbook_opponent));
