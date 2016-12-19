@@ -13,7 +13,6 @@
 extern crate rand;
 use std::fmt;
 use rand::Rng;
-use std::collections::BTreeSet;
 
 mod coord_letter;
 pub use self::coord_letter::CoordLetter;
