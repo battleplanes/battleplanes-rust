@@ -1,0 +1,22 @@
+This is the backend implementation of the battleplanes project in rust.
+
+It provides a basic web UI for experiencing the gameplay, but the focus is not
+on user experience.
+
+There is also a console interface for hacking around - it shows the full state
+of both players.
+
+For a more thorough overview, visit the [about project](https://github.com/battleplanes/about).
+
+Contributors
+------------
+
+* [Elias Amaral](https://github.com/dlight)
+* [Flavius Aspra](https://github.com/flavius)
+
+License
+-------
+
+Public Domain
+
+All battleplanes implementations are licensed under the public domain.
