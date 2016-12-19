@@ -6,6 +6,8 @@ on user experience.
 There is also a console interface for hacking around - it shows the full state
 of both players.
 
+Compiling this project requires nightly rust.
+
 For a more thorough overview, visit the [about project](https://github.com/battleplanes/about).
 
 [![Join the chat at
