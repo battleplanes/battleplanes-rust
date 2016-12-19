@@ -11,3 +11,5 @@
 * create getters with https://github.com/emk/accessors if racer can deal with
   it
 * implement REST endpoints
+* build scripts to embed various frontends into the binary, akin to
+  https://github.com/vitiral/rst
