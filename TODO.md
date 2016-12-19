@@ -1,6 +1,6 @@
+* battleplanes-rust should not depend on iron
+* more logging, error logging, use [error-chain](https://crates.io/crates/error-chain)
 * build script via cargo for assets
-* error logging, use [error-chain](https://crates.io/crates/error-chain)
-* gameplay on touch devices
 * profile the RAM usage
 * reduce memory usage
 * use Arc
@@ -10,4 +10,4 @@
 * more exhaustive testing
 * create getters with https://github.com/emk/accessors if racer can deal with
   it
-* battleplanes-rust should not depend on iron
+* implement REST endpoints
