@@ -1,5 +1,5 @@
 * build script via cargo for assets
-* error logging
+* error logging, use [error-chain](https://crates.io/crates/error-chain)
 * gameplay on touch devices
 * profile the RAM usage
 * reduce memory usage
@@ -10,3 +10,4 @@
 * more exhaustive testing
 * create getters with https://github.com/emk/accessors if racer can deal with
   it
+* battleplanes-rust should not depend on iron
