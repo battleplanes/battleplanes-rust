@@ -189,7 +189,7 @@ impl Game {
             return (Retry, None)
         }
         let wanted : usize = rand::thread_rng().gen::<usize>() % scrapbook_opponent.empty_indices().len();
- 
+
         let (tile_num, flag) = {
             let ref mut indices = scrapbook_opponent.empty_indices_mut();
             let tile_num = *indices.iter().nth(wanted).unwrap();
