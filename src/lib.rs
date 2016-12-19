@@ -184,24 +184,25 @@ impl Game {
     }
     pub fn opponent_hits_randomly(&mut self) -> (BombardmentResult, Option<Coordinate>) {
         use BombardmentResult::*;
-        if 0 == self.scrapbook_opponent.empty_indices.len() {
+        let ref mut scrapbook_opponent = &mut self.scrapbook_opponent;
+        if 0 == scrapbook_opponent.empty_indices().len() {
             return (Retry, None)
         }
-        let wanted : usize = rand::thread_rng().gen::<usize>() % self.scrapbook_opponent.empty_indices.len();
-        let ref mut indices = self.scrapbook_opponent.empty_indices;
+        let wanted : usize = rand::thread_rng().gen::<usize>() % scrapbook_opponent.empty_indices().len();
+        let ref mut indices = scrapbook_opponent.empty_indices_mut();
         let tile_num = *indices.iter().nth(wanted).unwrap();
         if indices.remove(&tile_num) {
             let tile = Coordinate::new_from_usize(tile_num);
             let result = self.board_you.hit_at(tile);
             match result {
                 Hit => {
-                    self.scrapbook_opponent.hits.push(tile.clone())
+                    scrapbook_opponent.hits_mut().push(tile.clone())
                 },
                 Miss => {
-                    self.scrapbook_opponent.misses.push(tile.clone())
+                    scrapbook_opponent.misses_mut().push(tile.clone())
                 },
                 Kill => {
-                    self.scrapbook_opponent.kills.push(tile.clone())
+                    scrapbook_opponent.kills_mut().push(tile.clone())
                 },
                 Retry => {
                 },
